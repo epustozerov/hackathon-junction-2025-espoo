@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Form Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="left-column">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2>Business Form Assistant</h2>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot-message">
+                        <div class="message-content">
+                            <p>Hello! I'm here to help you complete your business information form. Let's start with your company name. What would you like to call your company?</p>
+                        </div>
+                        <div class="message-time"></div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <form id="chatForm" class="chat-form">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            class="message-input" 
+                            placeholder="Type your message here..."
+                            autocomplete="off"
+                        >
+                        <button type="submit" class="send-button" id="sendButton">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="right-column">
+            <div class="progress-container">
+                <h2>Form Progress</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-steps" id="progressSteps">
+                        {% for step in steps %}
+                        <div class="progress-step" data-step-id="{{ step.id }}">
+                            <div class="step-indicator">
+                                <div class="step-circle"></div>
+                                {% if not loop.last %}
+                                <div class="step-connector"></div>
+                                {% endif %}
+                            </div>
+                            <div class="step-content">
+                                <div class="step-label">{{ step.label }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>
+
