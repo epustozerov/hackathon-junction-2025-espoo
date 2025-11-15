@@ -1,3 +1,35 @@
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #fafafa;
+    --bg-body: #f5f5f5;
+    --text-primary: #202020;
+    --text-secondary: #666;
+    --text-muted: #999;
+    --border-color: #e0e0e0;
+    --accent-color: #007bff;
+    --accent-hover: #0056b3;
+    --user-message-bg: #007bff;
+    --bot-message-bg: #f0f0f0;
+    --button-gray: #6c757d;
+    --button-gray-hover: #5a6268;
+}
+
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #242424;
+    --bg-body: #121212;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-muted: #808080;
+    --border-color: #333333;
+    --accent-color: #4a9eff;
+    --accent-hover: #357abd;
+    --user-message-bg: #007bff;
+    --bot-message-bg: #2a2a2a;
+    --button-gray: #555555;
+    --button-gray-hover: #666666;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,9 +38,11 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #f5f5f5;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
     height: 100vh;
     overflow: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -21,17 +55,19 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #ffffff;
-    border-right: 1px solid #e0e0e0;
+    background-color: var(--bg-primary);
+    border-right: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .right-column {
     width: 320px;
-    background-color: #fafafa;
-    border-left: 1px solid #e0e0e0;
+    background-color: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .chat-container {
@@ -42,14 +78,43 @@ body {
 
 .chat-header {
     padding: 20px 24px;
-    border-bottom: 1px solid #e0e0e0;
-    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .chat-header h2 {
     font-size: 18px;
     font-weight: 600;
-    color: #202020;
+    color: var(--text-primary);
+    transition: color 0.3s ease;
+}
+
+.theme-toggle-button {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background-color: transparent;
+    color: var(--text-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.1s, color 0.3s ease;
+    flex-shrink: 0;
+}
+
+.theme-toggle-button:hover {
+    background-color: var(--bot-message-bg);
+    transform: scale(1.05);
+}
+
+.theme-toggle-button:active {
+    transform: scale(0.95);
 }
 
 .chat-messages {
@@ -95,15 +160,17 @@ body {
 }
 
 .user-message .message-content {
-    background-color: #007bff;
+    background-color: var(--user-message-bg);
     color: #ffffff;
     border-bottom-right-radius: 4px;
+    transition: background-color 0.3s ease;
 }
 
 .bot-message .message-content {
-    background-color: #f0f0f0;
-    color: #202020;
+    background-color: var(--bot-message-bg);
+    color: var(--text-primary);
     border-bottom-left-radius: 4px;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .message-content p {
@@ -113,9 +180,10 @@ body {
 
 .message-time {
     font-size: 11px;
-    color: #999;
+    color: var(--text-muted);
     margin-top: 4px;
     padding: 0 4px;
+    transition: color 0.3s ease;
 }
 
 .user-message .message-time {
@@ -128,8 +196,9 @@ body {
 
 .chat-input-container {
     padding: 16px 24px;
-    border-top: 1px solid #e0e0e0;
-    background-color: #ffffff;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .chat-form {
@@ -141,22 +210,28 @@ body {
 .message-input {
     flex: 1;
     padding: 12px 16px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 24px;
     font-size: 15px;
     outline: none;
-    transition: border-color 0.2s;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color 0.2s, background-color 0.3s ease, color 0.3s ease;
 }
 
 .message-input:focus {
-    border-color: #007bff;
+    border-color: var(--accent-color);
+}
+
+.message-input::placeholder {
+    color: var(--text-muted);
 }
 
 .send-button {
     width: 40px;
     height: 40px;
     border: none;
-    background-color: #007bff;
+    background-color: var(--accent-color);
     color: #ffffff;
     border-radius: 50%;
     cursor: pointer;
@@ -168,11 +243,11 @@ body {
 }
 
 .send-button:hover:not(:disabled) {
-    background-color: #0056b3;
+    background-color: var(--accent-hover);
 }
 
 .send-button:disabled {
-    background-color: #ccc;
+    background-color: var(--text-muted);
     cursor: not-allowed;
 }
 
@@ -180,7 +255,7 @@ body {
     width: 40px;
     height: 40px;
     border: none;
-    background-color: #6c757d;
+    background-color: var(--button-gray);
     color: #ffffff;
     border-radius: 50%;
     cursor: pointer;
@@ -193,7 +268,7 @@ body {
 }
 
 .mic-button:hover:not(:disabled) {
-    background-color: #5a6268;
+    background-color: var(--button-gray-hover);
 }
 
 .mic-button:active:not(:disabled) {
@@ -218,7 +293,7 @@ body {
     width: 40px;
     height: 40px;
     border: none;
-    background-color: #6c757d;
+    background-color: var(--button-gray);
     color: #ffffff;
     border-radius: 50%;
     cursor: pointer;
@@ -231,7 +306,7 @@ body {
 }
 
 .audio-toggle-button:hover:not(:disabled) {
-    background-color: #5a6268;
+    background-color: var(--button-gray-hover);
 }
 
 .audio-toggle-button:active:not(:disabled) {
@@ -239,16 +314,16 @@ body {
 }
 
 .audio-toggle-button:disabled {
-    background-color: #ccc;
+    background-color: var(--text-muted);
     cursor: not-allowed;
 }
 
 .audio-toggle-button.active {
-    background-color: #007bff;
+    background-color: var(--accent-color);
 }
 
 .audio-toggle-button.active:hover {
-    background-color: #0056b3;
+    background-color: var(--accent-hover);
 }
 
 @keyframes pulse {
@@ -267,8 +342,9 @@ body {
 .progress-container h2 {
     font-size: 18px;
     font-weight: 600;
-    color: #202020;
+    color: var(--text-primary);
     margin-bottom: 24px;
+    transition: color 0.3s ease;
 }
 
 .progress-steps {
@@ -295,8 +371,8 @@ body {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    border: 2px solid #e0e0e0;
-    background-color: #ffffff;
+    border: 2px solid var(--border-color);
+    background-color: var(--bg-primary);
     transition: all 0.3s ease;
     position: relative;
     z-index: 1;
@@ -305,14 +381,14 @@ body {
 .step-connector {
     width: 2px;
     height: 40px;
-    background-color: #e0e0e0;
+    background-color: var(--border-color);
     margin-top: 4px;
     transition: background-color 0.3s ease;
 }
 
 .progress-step.completed .step-circle {
-    background-color: #007bff;
-    border-color: #007bff;
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 .progress-step.completed .step-circle::after {
@@ -327,13 +403,13 @@ body {
 }
 
 .progress-step.completed .step-connector {
-    background-color: #007bff;
+    background-color: var(--accent-color);
 }
 
 .progress-step.active .step-circle {
-    border-color: #007bff;
-    background-color: #ffffff;
-    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
+    border-color: var(--accent-color);
+    background-color: var(--bg-primary);
+    box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.1);
 }
 
 .progress-step.active .step-circle::after {
@@ -344,7 +420,7 @@ body {
     transform: translate(-50%, -50%);
     width: 8px;
     height: 8px;
-    background-color: #007bff;
+    background-color: var(--accent-color);
     border-radius: 50%;
 }
 
@@ -355,17 +431,17 @@ body {
 
 .step-label {
     font-size: 14px;
-    color: #666;
+    color: var(--text-secondary);
     transition: color 0.3s ease;
 }
 
 .progress-step.completed .step-label {
-    color: #202020;
+    color: var(--text-primary);
     font-weight: 500;
 }
 
 .progress-step.active .step-label {
-    color: #007bff;
+    color: var(--accent-color);
     font-weight: 600;
 }
 
