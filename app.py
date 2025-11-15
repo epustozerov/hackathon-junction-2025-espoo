@@ -37,7 +37,9 @@ chat_history = []
 TIERS = [
     {'id': 'beginner', 'name': 'Beginner', 'points_required': 0, 'icon': '🌱'},
     {'id': 'motivated_entrepreneur', 'name': 'Motivated Entrepreneur', 'points_required': 3, 'icon': '🚀'},
-    {'id': 'experienced_businessman', 'name': 'Experienced Businessman', 'points_required': 6, 'icon': '💼'}
+    {'id': 'growing_entrepreneur', 'name': 'Growing Entrepreneur', 'points_required': 4, 'icon': '🌟'},
+    {'id': 'experienced_business_professional', 'name': 'Experienced Business Professional', 'points_required': 6, 'icon': '💼'},
+    {'id': 'master_entrepreneur', 'name': 'Master Entrepreneur', 'points_required': 10, 'icon': '👑'}
 ]
 
 

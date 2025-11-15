@@ -491,19 +491,26 @@ body {
 
 .tiers-list {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
 }
 
 .tier-item {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
+    gap: 4px;
+    padding: 6px;
     border-radius: 8px;
     background-color: var(--bg-primary);
     border: 2px solid var(--border-color);
     transition: all 0.3s ease;
+    position: relative;
+    min-width: 48px;
+    cursor: pointer;
 }
 
 .tier-item.unlocked {
@@ -537,10 +544,27 @@ body {
 }
 
 .tier-name {
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 500;
     color: var(--text-secondary);
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    opacity: 0;
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    pointer-events: none;
+    background-color: var(--bg-primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+.tier-item:hover .tier-name {
+    opacity: 1;
 }
 
 .tier-item.unlocked .tier-name,

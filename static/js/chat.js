@@ -463,7 +463,9 @@ updateProgress([]);
 updateTiersAndPoints(0, 'beginner', [
     {id: 'beginner', points_required: 0},
     {id: 'motivated_entrepreneur', points_required: 3},
-    {id: 'experienced_businessman', points_required: 6}
+    {id: 'growing_entrepreneur', points_required: 4},
+    {id: 'experienced_business_professional', points_required: 6},
+    {id: 'master_entrepreneur', points_required: 10}
 ]);
 updateSendReportButton();
 
