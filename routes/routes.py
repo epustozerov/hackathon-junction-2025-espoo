@@ -15,7 +15,7 @@ from services.validation_service import validate_answer
 from services.chat_service import get_openai_response, get_tts_audio, transcribe_audio
 from services.email_service import send_report_email
 from services.yaml_service import update_yaml_with_answer, get_yaml_path
-from services.docx_service import create_docx_from_yaml
+from services.docx_service import create_docx_from_form_data
 
 
 def register_routes(app):
@@ -155,8 +155,7 @@ def register_routes(app):
             section, question, _ = get_current_business_plan_question(form_data, business_plan_sections)
             if not section:
                 try:
-                    yaml_path = get_yaml_path()
-                    send_report_email(form_data, yaml_path=yaml_path)
+                    send_report_email(form_data, business_plan_sections)
                     form_data['report_sent'] = True
                     report_sent = True
                 except Exception as e:
@@ -237,8 +236,7 @@ def register_routes(app):
         report_data['email'] = email
         
         try:
-            yaml_path = get_yaml_path()
-            send_report_email(report_data, yaml_path=yaml_path)
+            send_report_email(report_data, business_plan_sections)
             if not form_data.get('email'):
                 form_data['email'] = email
             return jsonify({'success': True, 'message': 'Report sent successfully!'})
@@ -249,8 +247,10 @@ def register_routes(app):
     def download_report():
         docx_path = None
         try:
-            yaml_path = get_yaml_path()
-            docx_path = create_docx_from_yaml(yaml_path)
+            print(f"DEBUG ROUTE: form_data id: {id(form_data)}, type: {type(form_data)}")
+            print(f"DEBUG ROUTE: form_data contents: {form_data}")
+            print(f"DEBUG ROUTE: form_data keys: {list(form_data.keys())}")
+            docx_path = create_docx_from_form_data(form_data, business_plan_sections)
             
             if docx_path and os.path.exists(docx_path):
                 def remove_file():

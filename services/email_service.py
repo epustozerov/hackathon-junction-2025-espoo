@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 from datetime import datetime
-from services.docx_service import create_docx_from_yaml
+from services.docx_service import create_docx_from_form_data
 from services.yaml_service import get_yaml_path
 
 
@@ -40,7 +40,7 @@ Thank you for providing your information!
     return report
 
 
-def send_report_email(form_data, yaml_path=None):
+def send_report_email(form_data, business_plan_sections, yaml_path=None):
     try:
         from config.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_EMAIL
     except ImportError:
@@ -74,7 +74,7 @@ def send_report_email(form_data, yaml_path=None):
     
     docx_path = None
     try:
-        docx_path = create_docx_from_yaml(yaml_path)
+        docx_path = create_docx_from_form_data(form_data, business_plan_sections)
         if docx_path and os.path.exists(docx_path):
             with open(docx_path, 'rb') as attachment:
                 part = MIMEBase('application', 'octet-stream')
