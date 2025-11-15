@@ -2,11 +2,11 @@
 
 Our solution for the City of Espoo challenge at Junction 2025. A ChatGPT-style chatbot interface that guides entrepreneurs through completing their business information form via conversational dialogue, with real-time progress tracking and multi-language support.
 
-🎯 Challenge Background
+### Challenge Background
 
 Addresses the Business Advisory Service 2.0 challenge: creating a digital service to help entrepreneurs prepare for advisory meetings, especially international entrepreneurs lacking knowledge of Finnish business procedures. Our chatbot enables better preparation and clearer communication before live meetings.
 
-🌐 Web Application
+### Web Application
 
 We provide a Flask web interface for seamless business form completion:
 
@@ -18,7 +18,22 @@ We provide a Flask web interface for seamless business form completion:
 - **Multi-language support** ready for international entrepreneurs
 - **Responsive design** accessible on various devices
 
-**Quick Start:**
+
+### Screenshots
+
+#### First Steps
+<img src="resources/screenshots/First Steps.png" alt="First Steps" width="700"><br>
+The chatbot guides users through the initial form collection, gathering company name, preferred language, business sphere, education, experience, and location with real-time progress tracking.
+
+#### Business Questions
+<img src="resources/screenshots/Questions.png" alt="Questions" width="700"><br>
+Multi-section business plan questionnaire with core and optional questions, showing progress across sections and the points-based tier system.
+
+#### Data Export
+<img src="resources/screenshots/Data Export.png" alt="Data Export" width="700"><br>
+Download the completed business plan as a DOCX document or receive it via email with all collected information formatted and ready for advisory meetings.
+
+### Quick Start
 
 ```bash
 python app.py
@@ -34,7 +49,7 @@ The web app guides users through:
 - **Email Reports**: Automatic email delivery with business plan attachment
 - **Voice Features**: Text-to-speech and audio transcription support
 
-📊 Form Data Structure
+### Form Data Structure
 
 The system collects structured business information through conversational dialogue. Here's the data structure:
 
@@ -78,7 +93,7 @@ Form Completion Flow
 - Section-by-section completion status
 - Core and optional question tracking
 
-🔧 Technical Architecture
+### Technical Architecture
 
 **Backend:**
 - Flask web framework for API endpoints
@@ -105,13 +120,13 @@ Form Completion Flow
 - `GET /api/download-report` - Download business plan as DOCX
 - `POST /api/reset` - Reset form data
 
-🚀 Future Enhancements
+### Future Enhancements
 
 - **Form Data Persistence**: Save progress and allow users to resume later
 - **Integration with Business Espoo**: Connect with existing advisory service workflows
 - **Personalized Recommendations**: AI-driven suggestions based on collected information
 
-💡 Impact & Alignment with Espoo's Vision
+### Impact & Alignment with Espoo's Vision
 
 **Accessibility:** Makes business advisory preparation accessible to entrepreneurs regardless of language or experience level
 
@@ -123,6 +138,6 @@ Form Completion Flow
 
 **Human-Centered Design:** Intuitive chat interface reduces friction and makes the process feel natural
 
-📄 License
+### License
 
 This project is released into the public domain under the Unlicense.
