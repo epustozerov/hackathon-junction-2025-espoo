@@ -449,3 +449,107 @@ body {
     display: none;
 }
 
+.tier-container {
+    padding: 24px;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.tier-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.tier-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    transition: color 0.3s ease;
+}
+
+.points-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.points-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.points-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-color);
+    transition: color 0.3s ease;
+}
+
+.tiers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tier-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background-color: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.tier-item.unlocked {
+    border-color: var(--accent-color);
+    background-color: rgba(74, 158, 255, 0.1);
+}
+
+.tier-item.current {
+    border-color: var(--accent-color);
+    background-color: rgba(74, 158, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2);
+}
+
+.tier-icon {
+    font-size: 24px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: grayscale(100%);
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.tier-item.unlocked .tier-icon,
+.tier-item.current .tier-icon {
+    filter: grayscale(0%);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.tier-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.tier-item.unlocked .tier-name,
+.tier-item.current .tier-name {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.tier-item.current .tier-name {
+    color: var(--accent-color);
+}
+

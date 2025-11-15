@@ -33,6 +33,38 @@ FORM_STEPS = [
 
 form_data = {}
 
+TIERS = [
+    {'id': 'beginner', 'name': 'Beginner', 'points_required': 0, 'icon': '🌱'},
+    {'id': 'motivated_entrepreneur', 'name': 'Motivated Entrepreneur', 'points_required': 3, 'icon': '🚀'},
+    {'id': 'experienced_businessman', 'name': 'Experienced Businessman', 'points_required': 6, 'icon': '💼'}
+]
+
+
+def calculate_points(form_data):
+    points = 0
+    if form_data.get('company_name'):
+        points += 1
+    if form_data.get('language'):
+        points += 1
+    if form_data.get('sphere'):
+        points += 1
+    if form_data.get('education'):
+        points += 1
+    if form_data.get('experience'):
+        points += 1
+    if form_data.get('location'):
+        points += 1
+    return points
+
+
+def get_current_tier(points):
+    current_tier = TIERS[0]
+    for tier in reversed(TIERS):
+        if points >= tier['points_required']:
+            current_tier = tier
+            break
+    return current_tier
+
 
 def get_step_prompt(current_step, form_data):
     step_descriptions = {
@@ -227,12 +259,18 @@ def chat():
         except Exception as e:
             print(f"Error sending email: {str(e)}")
     
+    points = calculate_points(form_data)
+    current_tier = get_current_tier(points)
+    
     return jsonify({
         'response': response['message'],
         'completed_steps': completed_steps,
         'form_data': form_data.copy(),
         'email_collected': email_collected,
-        'report_sent': report_sent
+        'report_sent': report_sent,
+        'points': points,
+        'current_tier': current_tier['id'],
+        'tiers': TIERS
     })
 
 

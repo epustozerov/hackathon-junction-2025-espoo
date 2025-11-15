@@ -69,6 +69,27 @@ function updateProgress(completedSteps) {
     }
 }
 
+function updateTiersAndPoints(points, currentTierId, tiers) {
+    const pointsValue = document.getElementById('pointsValue');
+    if (pointsValue) {
+        pointsValue.textContent = points || 0;
+    }
+    
+    const tierItems = document.querySelectorAll('.tier-item');
+    tierItems.forEach(item => {
+        const tierId = item.dataset.tierId;
+        item.classList.remove('unlocked', 'current');
+        
+        const tier = tiers.find(t => t.id === tierId);
+        if (tier && points >= tier.points_required) {
+            item.classList.add('unlocked');
+            if (tierId === currentTierId) {
+                item.classList.add('current');
+            }
+        }
+    });
+}
+
 async function ensureStream() {
     if (mediaStream) return mediaStream;
     try {
@@ -250,6 +271,7 @@ async function sendMessage() {
             setTimeout(() => {
                 addMessage(data.response, false);
                 updateProgress(data.completed_steps);
+                updateTiersAndPoints(data.points, data.current_tier, data.tiers);
                 
                 if (data.report_sent) {
                     setTimeout(() => {
@@ -358,4 +380,9 @@ if (themeToggleButton) {
 
 initTheme();
 updateProgress([]);
+updateTiersAndPoints(0, 'beginner', [
+    {id: 'beginner', points_required: 0},
+    {id: 'motivated_entrepreneur', points_required: 3},
+    {id: 'experienced_businessman', points_required: 6}
+]);
 
