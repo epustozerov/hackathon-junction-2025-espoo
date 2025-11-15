@@ -2,6 +2,10 @@ from flask import Flask, render_template, request, jsonify
 from openai import OpenAI
 import os
 import sys
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 
 try:
     from config.config import OPENAI_API_KEY
@@ -66,9 +70,14 @@ Current task: {current_task}
 After collecting the location, thank them for completing the form and ask if there's anything else they'd like to add.
 Keep responses concise (1-2 sentences) and conversational."""
     elif current_step == 'complete':
-        return f"""You are a friendly business form assistant. All required information has been collected:
+        if not form_data.get('email'):
+            return f"""You are a friendly business form assistant. All required information has been collected:
 {', '.join(collected_info)}
-Thank them for completing the form and ask if there's anything else they'd like to discuss.
+Now, please ask for their email address so we can send them a summary report of the information they provided.
+Keep responses concise and conversational."""
+        else:
+            return f"""You are a friendly business form assistant. All information including email has been collected.
+Thank them for completing the form and let them know that a report will be sent to their email address shortly.
 Keep responses concise and conversational."""
     else:
         next_steps = []
@@ -161,6 +170,8 @@ def chat():
             current_step = step['id']
             break
     
+    all_steps_completed = all(form_data.get(step['id']) for step in FORM_STEPS)
+    
     if current_step == 'company_name' and len(user_message.strip()) > 1:
         form_data['company_name'] = user_message
     elif current_step == 'language':
@@ -186,6 +197,18 @@ def chat():
     elif current_step == 'location' and len(user_message.strip()) > 2:
         form_data['location'] = user_message
     
+    if all_steps_completed and not form_data.get('email'):
+        import re
+        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        email_match = re.search(email_pattern, user_message)
+        if email_match:
+            form_data['email'] = email_match.group()
+        elif '@' in user_message and len(user_message.strip()) > 5:
+            form_data['email'] = user_message.strip()
+    
+    if current_step is None:
+        current_step = 'complete'
+    
     response = get_openai_response(user_message, current_step)
     
     completed_steps = []
@@ -193,10 +216,23 @@ def chat():
         if form_data.get(step['id']):
             completed_steps.append(step['id'])
     
+    email_collected = form_data.get('email') is not None
+    report_sent = False
+    
+    if email_collected and all_steps_completed and not form_data.get('report_sent'):
+        try:
+            send_report_email(form_data)
+            form_data['report_sent'] = True
+            report_sent = True
+        except Exception as e:
+            print(f"Error sending email: {str(e)}")
+    
     return jsonify({
         'response': response['message'],
         'completed_steps': completed_steps,
-        'form_data': form_data.copy()
+        'form_data': form_data.copy(),
+        'email_collected': email_collected,
+        'report_sent': report_sent
     })
 
 
@@ -257,6 +293,86 @@ def transcribe():
         error_details = traceback.format_exc()
         print(f"Transcription error: {error_details}")
         return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
+
+
+def generate_report(form_data):
+    report = f"""
+BUSINESS INFORMATION FORM REPORT
+{'=' * 50}
+
+Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+COMPANY INFORMATION
+{'-' * 50}
+Company Name: {form_data.get('company_name', 'N/A')}
+Business Sphere: {form_data.get('sphere', 'N/A')}
+Location: {form_data.get('location', 'N/A')}
+
+PERSONAL INFORMATION
+{'-' * 50}
+Preferred Language: {form_data.get('language', 'N/A')}
+Education: {form_data.get('education', 'N/A')}
+Experience: {form_data.get('experience', 'N/A')}
+
+CONTACT INFORMATION
+{'-' * 50}
+Email: {form_data.get('email', 'N/A')}
+
+{'=' * 50}
+
+This report was generated automatically by the Business Form Assistant.
+Thank you for providing your information!
+"""
+    return report
+
+
+def send_report_email(form_data):
+    try:
+        email_config = {}
+        try:
+            from config.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_EMAIL
+            email_config = {
+                'server': SMTP_SERVER,
+                'port': SMTP_PORT,
+                'username': SMTP_USERNAME,
+                'password': SMTP_PASSWORD,
+                'from_email': FROM_EMAIL
+            }
+        except ImportError:
+            email_config = {
+                'server': os.environ.get('SMTP_SERVER', 'smtp.gmail.com'),
+                'port': int(os.environ.get('SMTP_PORT', '587')),
+                'username': os.environ.get('SMTP_USERNAME', ''),
+                'password': os.environ.get('SMTP_PASSWORD', ''),
+                'from_email': os.environ.get('FROM_EMAIL', 'noreply@example.com')
+            }
+        
+        if not email_config['username'] or not email_config['password']:
+            print("Warning: Email configuration not found. Report will not be sent.")
+            return False
+        
+        to_email = form_data.get('email')
+        if not to_email:
+            return False
+        
+        report_text = generate_report(form_data)
+        
+        msg = MIMEMultipart()
+        msg['From'] = email_config['from_email']
+        msg['To'] = to_email
+        msg['Subject'] = 'Business Information Form Report'
+        
+        msg.attach(MIMEText(report_text, 'plain'))
+        
+        with smtplib.SMTP(email_config['server'], email_config['port']) as server:
+            server.starttls()
+            server.login(email_config['username'], email_config['password'])
+            server.send_message(msg)
+        
+        return True
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+        raise
 
 
 @app.route('/api/reset', methods=['POST'])

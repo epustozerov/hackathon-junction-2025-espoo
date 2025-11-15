@@ -251,6 +251,12 @@ async function sendMessage() {
                 addMessage(data.response, false);
                 updateProgress(data.completed_steps);
                 
+                if (data.report_sent) {
+                    setTimeout(() => {
+                        addMessage('✓ Report has been sent to your email address!', false);
+                    }, 1000);
+                }
+                
                 if (audioOutputEnabled) {
                     playAudioFromTTS(data.response);
                 }
