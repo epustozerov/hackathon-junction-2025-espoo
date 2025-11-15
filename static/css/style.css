@@ -61,10 +61,11 @@ body {
 }
 
 .right-column {
-    width: 320px;
+    width: 360px;
+    height: 100vh;
     background-color: var(--bg-secondary);
     border-left: 1px solid var(--border-color);
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -339,6 +340,18 @@ body {
     padding: 24px;
 }
 
+#businessPlanProgressContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#initialProgressContainer {
+    flex-shrink: 0;
+}
+
 .progress-container h2 {
     font-size: 18px;
     font-weight: 600;
@@ -380,9 +393,9 @@ body {
 
 .step-connector {
     width: 2px;
-    height: 40px;
+    height: 28px;
     background-color: var(--border-color);
-    margin-top: 4px;
+    margin-top: 2px;
     transition: background-color 0.3s ease;
 }
 
@@ -426,7 +439,7 @@ body {
 
 .step-content {
     flex: 1;
-    padding-top: 2px;
+    padding-top: 0;
 }
 
 .step-label {
@@ -445,6 +458,28 @@ body {
     font-weight: 600;
 }
 
+.progress-step.skipped .step-circle {
+    background-color: var(--text-muted);
+    border-color: var(--text-muted);
+}
+
+.progress-step.skipped .step-circle::after {
+    content: '−';
+    color: var(--bg-primary);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.progress-step.skipped .step-connector {
+    background-color: var(--text-muted);
+}
+
+.progress-step.skipped .step-label {
+    color: var(--text-muted);
+    font-weight: 400;
+    text-decoration: line-through;
+}
+
 .progress-step:last-child .step-connector {
     display: none;
 }
@@ -458,6 +493,7 @@ body {
     padding: 16px 24px 0;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 .section-nav-buttons {
@@ -498,6 +534,10 @@ body {
 
 .sections-container {
     position: relative;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
 }
 
 .business-plan-section {

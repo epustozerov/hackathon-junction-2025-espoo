@@ -2,9 +2,8 @@ from flask import Flask, render_template, request, jsonify
 from openai import OpenAI
 import os
 import sys
+import re
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
 try:
@@ -31,73 +30,129 @@ FORM_STEPS = [
     {'id': 'location', 'label': 'Location', 'completed': False},
 ]
 
-BUSINESS_PLAN_SECTIONS = [
-    {
-        'id': 'section_1',
-        'title': 'Section 1: The Big Picture',
-        'description': 'Your Vision and Foundation',
-        'core_questions': [
-            {'id': 'business_idea', 'label': 'Your Business Idea', 'fill': 'In a few sentences: what will you sell, and who will buy it? Keep it simple and clear.'},
-            {'id': 'vision_3_5_years', 'label': 'Your Vision (3–5 years)', 'fill': 'Imagine your business in 3-5 years. What does it look like? What impact are you making? Don\'t be afraid to dream a little.'},
-            {'id': 'skills_passion', 'label': 'Your Skills & Passion', 'fill': 'What experience, skills, or passion do you have that relates to this business? Why are YOU the right person to do this?'},
-        ],
-        'optional_questions': [
-            {'id': 'industry', 'label': 'Industry', 'fill': 'Briefly describe your industry, typical price levels, and trends affecting you (e.g., seasonality, regulation, technology). Keep to 3–5 bullets.'},
-        ]
-    },
-    {
-        'id': 'section_2',
-        'title': 'Section 2: Your Market, Customers, and Offer',
-        'description': 'Who you\'re serving and what you\'re selling',
-        'core_questions': [
-            {'id': 'ideal_customer', 'label': 'Your Ideal Customer', 'fill': 'Describe 1-2 types of customers you want to serve (e.g., small cafes in Helsinki, busy parents). Are they consumers (B2C) or other businesses (B2B)?'},
-            {'id': 'problem_you_solve', 'label': 'The Problem You Solve', 'fill': 'What specific problem, need, or desire does your product/service address for your ideal customer? Why would they pay for your solution?'},
-            {'id': 'products_services_pricing', 'label': 'Your Products, Services & Pricing', 'fill': 'List your main 1-3 products or services. How will you charge for them (e.g., per hour, fixed price, subscription)? What is a rough price point and your estimated cost per unit?'},
-            {'id': 'differentiation', 'label': 'What Makes You Different?', 'fill': 'Who are your top 2-3 competitors or alternatives? What is the main reason a customer would choose you over them? (e.g., better price, higher quality, more convenient, unique expertise).'},
-        ],
-        'optional_questions': [
-            {'id': 'customer_purchase_criteria', 'label': 'Customer Purchase Criteria', 'fill': 'What 3–5 factors customers compare when choosing (e.g., price, speed, quality, location, reviews, warranty, language, payment options). Rank them by importance.'},
-            {'id': 'customer_risks', 'label': 'Customer Risks', 'fill': 'List things that might stop a customer from buying (e.g., price too high, trust, delivery delay, privacy concerns). Add how you will reduce each risk.'},
-        ]
-    },
-    {
-        'id': 'section_3',
-        'title': 'Section 3: Operations and Go-to-Market',
-        'description': 'How you\'ll run the business and reach customers',
-        'core_questions': [
-            {'id': 'launch_plan', 'label': 'Your Launch Plan', 'fill': 'What are the first few practical steps you will take to get your first customer in the first 3 months? (e.g., build a simple website, contact 10 potential clients, run a small social media ad).'},
-            {'id': 'sales_marketing_channels', 'label': 'Sales & Marketing Channels', 'fill': 'How will your first customers hear about you? Pick 1-2 channels to start with (e.g., Instagram, local networking events, Google search, word-of-mouth).'},
-        ],
-        'optional_questions': [
-            {'id': 'production_logistics', 'label': 'Production and logistics (goods)', 'fill': 'If you sell goods: where you get them, minimum order sizes, lead times, shipping methods/costs, return process, and main cost drivers.'},
-            {'id': 'delivery_operations', 'label': 'Delivery operations (services)', 'fill': 'If you sell services: how you deliver, hours of operation, tools/software used, capacity per week, service level targets, and variable costs (e.g., travel, subcontracting).'},
-            {'id': 'distribution_network', 'label': 'Distribution network', 'fill': 'List partners/channels that will sell or deliver your offer (marketplaces, resellers, distributors). Include expected share of sales and fees/commissions.'},
-            {'id': 'third_parties_partners', 'label': 'Other third parties and key partners', 'fill': 'Suppliers, subcontractors, or advisors you rely on. For each: role and key terms (price, notice period).'},
-            {'id': 'internationalization', 'label': 'Internationalization plans', 'fill': 'If you plan to sell outside your country: target countries, timeline, language/currency needs, and any rules you must follow.'},
-        ]
-    },
-    {
-        'id': 'section_4',
-        'title': 'Section 4: Finances, Risks, and Formalities',
-        'description': 'Numbers, challenges, and legal setup',
-        'core_questions': [
-            {'id': 'startup_costs', 'label': 'Startup Costs & Initial Financing', 'fill': 'What are the essential things you need to buy to get started (e.g., laptop, materials, website domain)? How much cash do you need to cover costs for the first 3 months? (Estimates are fine!)'},
-            {'id': 'swot_analysis', 'label': 'SWOT Analysis', 'fill': 'List your top 2 strengths, weaknesses, opportunities, and threats. Be honest! This is a great way to summarize your situation.'},
-            {'id': 'company_basics', 'label': 'Company Basics', 'fill': 'What is your planned company name and legal form (e.g., sole trader/toiminimi, limited company/osakeyhtiö)? Who are the owners and what are the ownership percentages?'},
-        ],
-        'optional_questions': [
-            {'id': 'profitability_timeline', 'label': 'Profitability Timeline', 'fill': 'Estimate monthly fixed costs, expected monthly sales for months 1–6, and when you break even. Include how much cash you need until break-even (runway).'},
-            {'id': 'operating_risks', 'label': 'Potential risks in the operating environment', 'fill': 'Big external risks you cannot control (e.g., regulation changes, supplier issues, economic downturn). For each, note likelihood (low/med/high) and a simple backup plan.'},
-            {'id': 'intellectual_property', 'label': 'Intellectual Property', 'fill': 'Names/brands, domains, designs, or inventions. Say if registered/applied, and any next steps (e.g., file trademark).'},
-            {'id': 'permits_notices', 'label': 'Permits and notices', 'fill': 'Licenses/permits you may need (food, construction, health), who issues them, and expected timing/cost.'},
-            {'id': 'insurance', 'label': 'Insurance', 'fill': 'What insurance you plan to have (liability, professional, product, property). Add estimated annual premium or a quote if available.'},
-            {'id': 'key_contracts', 'label': 'Key contracts', 'fill': 'Any important contracts you need or already have (supplier, landlord, key customer). Note main terms (length, price, termination).'},
-        ]
-    }
-]
+
+def slugify(text):
+    text = text.lower()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[-\s]+', '_', text)
+    text = text.strip('_')
+    return text
+
+
+def load_business_plan_from_yaml():
+    yaml_path = os.path.join(os.path.dirname(__file__), 'config', 'improved_business_plan.yaml')
+    
+    with open(yaml_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    sections = []
+    current_section = None
+    current_questions = []
+    is_optional = False
+    
+    lines = content.split('\n')
+    i = 0
+    
+    while i < len(lines):
+        line = lines[i].strip()
+        
+        if line == '# ---':
+            i += 1
+            if i < len(lines):
+                next_line = lines[i].strip()
+                if next_line.startswith('# Section'):
+                    if current_section:
+                        sections.append(current_section)
+                    
+                    title_match = re.search(r'Section (\d+):\s*(.+)', next_line)
+                    if title_match:
+                        section_num = title_match.group(1)
+                        section_title = title_match.group(2).strip()
+                        
+                        i += 1
+                        if i < len(lines) and lines[i].strip() == '# ---':
+                            i += 1
+                        
+                        description = ""
+                        if i < len(lines):
+                            desc_line = lines[i].strip()
+                            if desc_line.startswith('#') and not desc_line.startswith('# ---'):
+                                description = desc_line.lstrip('#').strip()
+                        
+                        current_section = {
+                            'id': f'section_{section_num}',
+                            'title': f'Section {section_num}: {section_title}',
+                            'description': description,
+                            'core_questions': [],
+                            'optional_questions': []
+                        }
+                        current_questions = current_section['core_questions']
+                        is_optional = False
+        
+        elif line == '# --- Core Questions ---':
+            current_questions = current_section['core_questions'] if current_section else []
+            is_optional = False
+        
+        elif line == '# --- Optional Deeper Dive ---':
+            current_questions = current_section['optional_questions'] if current_section else []
+            is_optional = True
+        
+        elif line and not line.startswith('#') and ':' in line:
+            question_match = re.match(r'"([^"]+)":', line)
+            if question_match:
+                question_label = question_match.group(1)
+                question_id = slugify(question_label)
+                
+                i += 1
+                fill_text = ""
+                while i < len(lines):
+                    next_line = lines[i].strip()
+                    if not next_line or next_line.startswith('#'):
+                        if next_line.startswith('# ---'):
+                            i -= 1
+                            break
+                        i += 1
+                        continue
+                    
+                    if next_line.startswith('fill:'):
+                        fill_text = next_line.replace('fill:', '').strip()
+                        if fill_text.startswith('"') and fill_text.endswith('"'):
+                            fill_text = fill_text[1:-1]
+                        elif fill_text.startswith('"'):
+                            fill_text = fill_text[1:]
+                            i += 1
+                            while i < len(lines):
+                                cont_line = lines[i].strip()
+                                if cont_line.endswith('"'):
+                                    fill_text += ' ' + cont_line[:-1]
+                                    break
+                                fill_text += ' ' + cont_line
+                                i += 1
+                    elif next_line.startswith('why:') or next_line.startswith('answer:'):
+                        break
+                    i += 1
+                
+                if current_section and fill_text:
+                    question = {
+                        'id': question_id,
+                        'label': question_label,
+                        'fill': fill_text
+                    }
+                    current_questions.append(question)
+        
+        i += 1
+    
+    if current_section:
+        sections.append(current_section)
+    
+    return sections
+
+
+BUSINESS_PLAN_SECTIONS = load_business_plan_from_yaml()
 
 form_data = {}
 chat_history = []
+question_retries = {}
 
 TIERS = [
     {'id': 'beginner', 'name': 'Beginner', 'points_required': 0, 'icon': '🌱'},
@@ -110,18 +165,30 @@ TIERS = [
 
 def calculate_points(form_data):
     points = 0
-    if form_data.get('company_name'):
+    
+    if form_data.get('company_name') and form_data.get('company_name') != '':
         points += 1
-    if form_data.get('language'):
+    if form_data.get('language') and form_data.get('language') != '':
         points += 1
-    if form_data.get('sphere'):
+    if form_data.get('sphere') and form_data.get('sphere') != '':
         points += 1
-    if form_data.get('education'):
+    if form_data.get('education') and form_data.get('education') != '':
         points += 1
-    if form_data.get('experience'):
+    if form_data.get('experience') and form_data.get('experience') != '':
         points += 1
-    if form_data.get('location'):
+    if form_data.get('location') and form_data.get('location') != '':
         points += 1
+    
+    for section in BUSINESS_PLAN_SECTIONS:
+        for question in section['core_questions']:
+            question_value = form_data.get(question['id'])
+            if question_value and question_value != '':
+                points += 3
+        for question in section['optional_questions']:
+            question_value = form_data.get(question['id'])
+            if question_value and question_value != '':
+                points += 5
+    
     return points
 
 
@@ -135,16 +202,18 @@ def get_current_tier(points):
 
 
 def is_initial_form_complete(form_data):
-    return all(form_data.get(step['id']) for step in FORM_STEPS)
+    return all(form_data.get(step['id']) and form_data.get(step['id']) != '' for step in FORM_STEPS)
 
 
 def get_current_business_plan_question(form_data):
     for section in BUSINESS_PLAN_SECTIONS:
         for question in section['core_questions']:
-            if not form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value is None:
                 return section, question, 'core'
         for question in section['optional_questions']:
-            if not form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value is None:
                 return section, question, 'optional'
     return None, None, None
 
@@ -159,10 +228,15 @@ def get_business_plan_progress(form_data):
         'core_completed': [],
         'core_total': len(FORM_STEPS),
         'optional_completed': [],
-        'optional_total': 0
+        'optional_total': 0,
+        'core_questions': [],
+        'optional_questions': [],
+        'core_skipped': [],
+        'optional_skipped': []
     }
     for step in FORM_STEPS:
-        if form_data.get(step['id']):
+        step_value = form_data.get(step['id'])
+        if step_value and step_value != '':
             preliminary_progress['core_completed'].append(step['id'])
     progress.append(preliminary_progress)
     
@@ -174,19 +248,90 @@ def get_business_plan_progress(form_data):
             'core_completed': [],
             'core_total': len(section['core_questions']),
             'optional_completed': [],
-            'optional_total': len(section['optional_questions'])
+            'optional_total': len(section['optional_questions']),
+            'core_questions': section['core_questions'],
+            'optional_questions': section['optional_questions'],
+            'core_skipped': [],
+            'optional_skipped': []
         }
         for question in section['core_questions']:
-            if form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value == '':
+                section_progress['core_skipped'].append(question['id'])
+            elif question_value and question_value != '':
                 section_progress['core_completed'].append(question['id'])
         for question in section['optional_questions']:
-            if form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value == '':
+                section_progress['optional_skipped'].append(question['id'])
+            elif question_value and question_value != '':
                 section_progress['optional_completed'].append(question['id'])
         progress.append(section_progress)
     return progress
 
 
-def get_step_prompt(current_step, form_data):
+def validate_answer(user_message, current_step, question_info=None):
+    if not question_info:
+        return True
+    
+    user_message_clean = user_message.strip()
+    
+    if len(user_message_clean) < 2:
+        return False
+    
+    if user_message_clean.isdigit() and len(user_message_clean) > 3:
+        return False
+    
+    if user_message_clean.replace(' ', '').isdigit() and len(user_message_clean.replace(' ', '')) > 3:
+        return False
+    
+    if len(set(user_message_clean.replace(' ', ''))) < 3 and len(user_message_clean) > 5:
+        return False
+    
+    question_label = question_info.get('label', '')
+    question_fill = question_info.get('fill', '')
+    
+    validation_prompt = f"""You are validating if a user's answer appropriately addresses a business plan question.
+
+Question: "{question_label}"
+Question context: {question_fill}
+
+User's answer: "{user_message}"
+
+Determine if the user's answer:
+1. Actually addresses the question being asked
+2. Provides meaningful information relevant to the question
+3. Is not just random numbers, gibberish, or meaningless text
+4. Is not just a generic response, question, or unrelated comment
+5. Contains actual words or meaningful content (not just digits or symbols)
+
+Examples of INVALID answers:
+- Random numbers like "5645646" or "123456"
+- Gibberish like "asdfgh" or "qwerty"
+- Single words that don't answer the question
+- Unrelated comments or questions
+
+Respond with ONLY "YES" if the answer is appropriate and addresses the question, or "NO" if it does not address the question properly or is nonsensical."""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {'role': 'system', 'content': validation_prompt},
+                {'role': 'user', 'content': 'Validate this answer.'}
+            ],
+            temperature=0.3,
+            max_tokens=10
+        )
+        
+        result = response.choices[0].message.content.strip().upper()
+        return result.startswith('YES')
+    except Exception as e:
+        print(f"Validation error: {str(e)}")
+        return True
+
+
+def get_step_prompt(current_step, form_data, is_retry=False, is_skipping=False):
     if current_step and current_step.startswith('bp_'):
         section, question, question_type = get_current_business_plan_question(form_data)
         if section and question:
@@ -204,10 +349,16 @@ def get_step_prompt(current_step, form_data):
             if question_type == 'optional':
                 question_instruction += " (This is an optional deeper dive question - they can skip if they prefer.)"
             
+            retry_note = ""
+            if is_retry:
+                retry_note = " The user's previous answer didn't seem to address the question properly or was unclear (it might have been random numbers, gibberish, or unrelated text). Please politely let them know you didn't understand their answer and ask the same question again. Be encouraging and supportive. If they don't answer properly this time, we'll move on to the next question."
+            elif is_skipping:
+                retry_note = " The user didn't provide a clear answer to the previous question after two attempts, so we're moving on. Please ask the next question naturally and encouragingly."
+            
             return f"""You are a friendly business advisor assistant helping create a comprehensive business plan. {context}
 {section_info}
-Current question: {question_instruction}
-Keep responses concise (1-2 sentences) and conversational. Be encouraging and supportive."""
+Now ask them: "{question['label']}" - {question['fill']}{retry_note}
+Keep responses concise (1-2 sentences) and conversational. Be encouraging and supportive. Make sure to actually ask the question directly."""
         else:
             return """You are a friendly business advisor assistant. All business plan questions have been completed.
 Thank them for their thorough responses and let them know their business plan information has been collected."""
@@ -242,9 +393,16 @@ Thank them for their thorough responses and let them know their business plan in
     current_task = step_descriptions.get(current_step, "Continue the conversation naturally.")
     
     if current_step == 'location':
-        return f"""You are a friendly business form assistant helping to collect information. {context}
+        section, question, _ = get_current_business_plan_question(form_data)
+        if section and question:
+            return f"""You are a friendly business form assistant helping to collect information. {context}
 Current task: {current_task}
-After collecting the location, congratulate them on completing the initial form and introduce the business plan checklist. Explain that you'll now help them work through a comprehensive business plan with 4 sections covering vision, market, operations, and finances.
+After collecting the location, congratulate them on completing the initial form. Then immediately ask them the first business plan question: "{question['label']}". {question['fill']}
+Keep responses concise (1-2 sentences) and conversational."""
+        else:
+            return f"""You are a friendly business form assistant helping to collect information. {context}
+Current task: {current_task}
+After collecting the location, congratulate them on completing the initial form and introduce the business plan checklist.
 Keep responses concise (1-2 sentences) and conversational."""
     elif current_step == 'complete':
         if not form_data.get('email'):
@@ -268,17 +426,21 @@ Keep responses concise and conversational."""
         next_hint = (f" After collecting this information, you'll ask about:"
                      f" {next_steps[0] if next_steps else 'completion'}.") if next_steps else ""
         
+        retry_note_initial = ""
+        if is_retry:
+            retry_note_initial = " The user's previous answer was unclear or didn't make sense (it might have been random numbers, gibberish, or unrelated text). Please politely let them know you didn't understand their answer and ask the same question again. Be encouraging and supportive."
+        
         return f"""You are a friendly business form assistant helping to collect information. {context}
-Current task: {current_task}{next_hint}
+Current task: {current_task}{retry_note_initial}{next_hint}
 Keep responses concise (1-2 sentences) and conversational. 
 Acknowledge their input and naturally move to the next question."""
 
 
-def get_openai_response(user_message, current_step):
+def get_openai_response(user_message, current_step, is_retry=False, is_skipping=False):
     global chat_history
     
     try:
-        context_message = get_step_prompt(current_step, form_data)
+        context_message = get_step_prompt(current_step, form_data, is_retry=is_retry, is_skipping=is_skipping)
         
         system_message = {
             'role': 'system',
@@ -359,8 +521,19 @@ def index():
     return render_template('index.html', steps=FORM_STEPS)
 
 
+@app.route('/api/business-plan-structure', methods=['GET'])
+def get_business_plan_structure():
+    empty_form_data = {}
+    business_plan_progress = get_business_plan_progress(empty_form_data)
+    return jsonify({
+        'business_plan_progress': business_plan_progress
+    })
+
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    global question_retries
+    
     data = request.json
     user_message = data.get('message', '').strip()
     
@@ -369,6 +542,10 @@ def chat():
     
     initial_form_complete = is_initial_form_complete(form_data)
     current_step = None
+    answer_valid = True
+    question_info = None
+    is_retry = False
+    is_skipping = False
     
     if not initial_form_complete:
         for step in FORM_STEPS:
@@ -376,7 +553,18 @@ def chat():
                 current_step = step['id']
                 break
         
-        if current_step == 'company_name' and len(user_message.strip()) > 1:
+        user_message_clean = user_message.strip()
+        
+        is_nonsensical = False
+        if len(user_message_clean) > 3:
+            if user_message_clean.isdigit() or user_message_clean.replace(' ', '').isdigit():
+                is_nonsensical = True
+            elif len(set(user_message_clean.replace(' ', ''))) < 3 and len(user_message_clean) > 5:
+                is_nonsensical = True
+        
+        if is_nonsensical:
+            is_retry = True
+        elif current_step == 'company_name' and len(user_message_clean) > 1:
             form_data['company_name'] = user_message
         elif current_step == 'language':
             lang_map = {
@@ -392,20 +580,40 @@ def chat():
                     break
             if not form_data.get('language'):
                 form_data['language'] = user_message
-        elif current_step == 'sphere' and len(user_message.strip()) > 2:
+        elif current_step == 'sphere' and len(user_message_clean) > 2:
             form_data['sphere'] = user_message
-        elif current_step == 'education' and len(user_message.strip()) > 2:
+        elif current_step == 'education' and len(user_message_clean) > 2:
             form_data['education'] = user_message
-        elif current_step == 'experience' and len(user_message.strip()) > 0:
+        elif current_step == 'experience' and len(user_message_clean) > 0:
             form_data['experience'] = user_message
-        elif current_step == 'location' and len(user_message.strip()) > 2:
+        elif current_step == 'location' and len(user_message_clean) > 2:
             form_data['location'] = user_message
     else:
         section, question, question_type = get_current_business_plan_question(form_data)
         if section and question:
             current_step = f"bp_{question['id']}"
+            question_info = question
+            
             if len(user_message.strip()) > 2:
-                form_data[question['id']] = user_message
+                answer_valid = validate_answer(user_message, current_step, question_info)
+                
+                if answer_valid:
+                    form_data[question['id']] = user_message
+                    if current_step in question_retries:
+                        del question_retries[current_step]
+                else:
+                    retry_count = question_retries.get(current_step, 0)
+                    if retry_count < 1:
+                        question_retries[current_step] = retry_count + 1
+                        is_retry = True
+                    else:
+                        if current_step in question_retries:
+                            del question_retries[current_step]
+                        form_data[question['id']] = ''
+                        section, next_question, _ = get_current_business_plan_question(form_data)
+                        if next_question:
+                            current_step = f"bp_{next_question['id']}"
+                            is_skipping = True
         else:
             current_step = 'bp_complete'
     
@@ -423,7 +631,7 @@ def chat():
     if current_step is None:
         current_step = 'complete' if not initial_form_complete else 'bp_complete'
     
-    response = get_openai_response(user_message, current_step)
+    response = get_openai_response(user_message, current_step, is_retry=is_retry, is_skipping=is_skipping)
     
     completed_steps = []
     for step in FORM_STEPS:
@@ -546,7 +754,7 @@ Email: {form_data.get('email', 'N/A')}
 
 {'=' * 50}
 
-This report was generated automatically by the Business Form Assistant.
+This report was generated automatically by Aino: Business Advisory Service 2.0.
 Thank you for providing your information!
 """
     return report
@@ -554,47 +762,38 @@ Thank you for providing your information!
 
 def send_report_email(form_data):
     try:
-        email_config = {}
-        try:
-            from config.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_EMAIL
-            email_config = {
-                'server': SMTP_SERVER,
-                'port': SMTP_PORT,
-                'username': SMTP_USERNAME,
-                'password': SMTP_PASSWORD,
-                'from_email': FROM_EMAIL
-            }
-        except ImportError:
-            email_config = {
-                'server': os.environ.get('SMTP_SERVER', 'smtp.gmail.com'),
-                'port': int(os.environ.get('SMTP_PORT', '587')),
-                'username': os.environ.get('SMTP_USERNAME', ''),
-                'password': os.environ.get('SMTP_PASSWORD', ''),
-                'from_email': os.environ.get('FROM_EMAIL', 'noreply@example.com')
-            }
-        
-        if not email_config['username'] or not email_config['password']:
-            print("Warning: Email configuration not found. Report will not be sent.")
-            return False
-        
-        to_email = form_data.get('email')
-        if not to_email:
-            return False
-        
-        report_text = generate_report(form_data)
-        
-        msg = MIMEMultipart()
-        msg['From'] = email_config['from_email']
-        msg['To'] = to_email
-        msg['Subject'] = 'Business Information Form Report'
-        
-        msg.attach(MIMEText(report_text, 'plain'))
-        
-        with smtplib.SMTP(email_config['server'], email_config['port']) as server:
+        from config.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_EMAIL
+    except ImportError:
+        SMTP_SERVER = os.environ.get('SMTP_SERVER', 'live.smtp.mailtrap.io')
+        SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+        SMTP_USERNAME = os.environ.get('SMTP_USERNAME', 'api')
+        SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+        FROM_EMAIL = os.environ.get('FROM_EMAIL', 'hello@ainoespoo.com')
+    
+    if not SMTP_PASSWORD:
+        print("Warning: SMTP password not found. Report will not be sent.")
+        return False
+    
+    sender = FROM_EMAIL
+    receiver = form_data.get('email')
+    
+    if not receiver:
+        return False
+    
+    report_text = generate_report(form_data)
+    
+    message = f"""\
+Subject: Business Information Form Report
+To: {receiver}
+From: {sender}
+
+{report_text}"""
+    
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
-            server.login(email_config['username'], email_config['password'])
-            server.send_message(msg)
-        
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(sender, receiver, message)
         return True
     except Exception as e:
         print(f"Error sending email: {str(e)}")
@@ -631,9 +830,10 @@ def send_report_manual():
 
 @app.route('/api/reset', methods=['POST'])
 def reset():
-    global form_data, chat_history
+    global form_data, chat_history, question_retries
     form_data = {}
     chat_history = []
+    question_retries = {}
     return jsonify({'success': True})
 
 

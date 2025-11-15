@@ -70,6 +70,8 @@ function updateProgress(completedSteps) {
 }
 
 let currentSectionIndex = 0;
+let previousInitialFormComplete = false;
+let previousSectionCompletions = {};
 
 function renderBusinessPlanProgress(businessPlanProgress) {
     const container = document.getElementById('businessPlanProgressContainer');
@@ -141,6 +143,7 @@ function renderBusinessPlanProgress(businessPlanProgress) {
         stepsDiv.setAttribute('data-section-id', sectionProgress.section_id);
         
         const allQuestions = [];
+        
         if (sectionProgress.section_id === 'section_0') {
             allQuestions.push(
                 {id: 'company_name', label: 'Company Name', type: 'core'},
@@ -150,44 +153,17 @@ function renderBusinessPlanProgress(businessPlanProgress) {
                 {id: 'experience', label: 'Experience', type: 'core'},
                 {id: 'location', label: 'Location', type: 'core'}
             );
-        } else if (sectionProgress.section_id === 'section_1') {
-            allQuestions.push(
-                {id: 'business_idea', label: 'Your Business Idea', type: 'core'},
-                {id: 'vision_3_5_years', label: 'Your Vision (3–5 years)', type: 'core'},
-                {id: 'skills_passion', label: 'Your Skills & Passion', type: 'core'},
-                {id: 'industry', label: 'Industry', type: 'optional'}
-            );
-        } else if (sectionProgress.section_id === 'section_2') {
-            allQuestions.push(
-                {id: 'ideal_customer', label: 'Your Ideal Customer', type: 'core'},
-                {id: 'problem_you_solve', label: 'The Problem You Solve', type: 'core'},
-                {id: 'products_services_pricing', label: 'Your Products, Services & Pricing', type: 'core'},
-                {id: 'differentiation', label: 'What Makes You Different?', type: 'core'},
-                {id: 'customer_purchase_criteria', label: 'Customer Purchase Criteria', type: 'optional'},
-                {id: 'customer_risks', label: 'Customer Risks', type: 'optional'}
-            );
-        } else if (sectionProgress.section_id === 'section_3') {
-            allQuestions.push(
-                {id: 'launch_plan', label: 'Your Launch Plan', type: 'core'},
-                {id: 'sales_marketing_channels', label: 'Sales & Marketing Channels', type: 'core'},
-                {id: 'production_logistics', label: 'Production and logistics', type: 'optional'},
-                {id: 'delivery_operations', label: 'Delivery operations', type: 'optional'},
-                {id: 'distribution_network', label: 'Distribution network', type: 'optional'},
-                {id: 'third_parties_partners', label: 'Other third parties', type: 'optional'},
-                {id: 'internationalization', label: 'Internationalization plans', type: 'optional'}
-            );
-        } else if (sectionProgress.section_id === 'section_4') {
-            allQuestions.push(
-                {id: 'startup_costs', label: 'Startup Costs & Initial Financing', type: 'core'},
-                {id: 'swot_analysis', label: 'SWOT Analysis', type: 'core'},
-                {id: 'company_basics', label: 'Company Basics', type: 'core'},
-                {id: 'profitability_timeline', label: 'Profitability Timeline', type: 'optional'},
-                {id: 'operating_risks', label: 'Operating risks', type: 'optional'},
-                {id: 'intellectual_property', label: 'Intellectual Property', type: 'optional'},
-                {id: 'permits_notices', label: 'Permits and notices', type: 'optional'},
-                {id: 'insurance', label: 'Insurance', type: 'optional'},
-                {id: 'key_contracts', label: 'Key contracts', type: 'optional'}
-            );
+        } else {
+            if (sectionProgress.core_questions && Array.isArray(sectionProgress.core_questions)) {
+                sectionProgress.core_questions.forEach(q => {
+                    allQuestions.push({id: q.id, label: q.label, type: 'core'});
+                });
+            }
+            if (sectionProgress.optional_questions && Array.isArray(sectionProgress.optional_questions)) {
+                sectionProgress.optional_questions.forEach(q => {
+                    allQuestions.push({id: q.id, label: q.label, type: 'optional'});
+                });
+            }
         }
         
         allQuestions.forEach((question, qIndex) => {
@@ -269,35 +245,28 @@ function updateBusinessPlanProgress(businessPlanProgress) {
         
         const progressSteps = Array.from(stepsDiv.querySelectorAll('.progress-step'));
         const allCompleted = [...sectionProgress.core_completed, ...sectionProgress.optional_completed];
+        const allSkipped = [...(sectionProgress.core_skipped || []), ...(sectionProgress.optional_skipped || [])];
+        const allProcessed = [...allCompleted, ...allSkipped];
         
         progressSteps.forEach((step, index) => {
             const stepId = step.dataset.stepId;
-            step.classList.remove('completed', 'active');
+            step.classList.remove('completed', 'active', 'skipped');
             
             if (allCompleted.includes(stepId)) {
                 step.classList.add('completed');
-            } else {
-                const allPreviousCompleted = progressSteps
-                    .slice(0, index)
-                    .every(s => allCompleted.includes(s.dataset.stepId));
-                
-                if (allPreviousCompleted && index === allCompleted.length) {
-                    step.classList.add('active');
-                }
+            } else if (allSkipped.includes(stepId)) {
+                step.classList.add('skipped');
             }
         });
         
-        if (allCompleted.length > 0) {
-            const firstIncompleteIndex = progressSteps.findIndex(
-                step => !allCompleted.includes(step.dataset.stepId)
-            );
-            if (firstIncompleteIndex !== -1) {
-                progressSteps[firstIncompleteIndex].classList.add('active');
-            }
-        } else {
-            if (progressSteps.length > 0) {
-                progressSteps[0].classList.add('active');
-            }
+        const firstUnprocessedIndex = progressSteps.findIndex(
+            step => !allProcessed.includes(step.dataset.stepId)
+        );
+        
+        if (firstUnprocessedIndex !== -1) {
+            progressSteps[firstUnprocessedIndex].classList.add('active');
+        } else if (allProcessed.length === 0 && progressSteps.length > 0) {
+            progressSteps[0].classList.add('active');
         }
     });
     
@@ -585,12 +554,33 @@ async function sendMessage() {
                     if (initialContainer) {
                         initialContainer.style.display = 'none';
                     }
-                    renderBusinessPlanProgress(data.business_plan_progress);
-                } else {
-                    const initialContainer = document.getElementById('initialProgressContainer');
-                    if (initialContainer) {
-                        initialContainer.style.display = 'block';
+                    
+                    const isNowComplete = data.initial_form_complete;
+                    const wasJustCompleted = isNowComplete && !previousInitialFormComplete;
+                    
+                    const newProgress = data.business_plan_progress || [];
+                    
+                    if (wasJustCompleted && currentSectionIndex === 0) {
+                        currentSectionIndex = 1;
+                    } else {
+                        newProgress.forEach((sectionProgress, index) => {
+                            const sectionId = sectionProgress.section_id;
+                            const isComplete = sectionProgress.core_completed.length === sectionProgress.core_total &&
+                                sectionProgress.optional_completed.length === sectionProgress.optional_total;
+                            
+                            const wasComplete = previousSectionCompletions[sectionId] || false;
+                            
+                            if (!wasComplete && isComplete && index === currentSectionIndex && index < newProgress.length - 1) {
+                                currentSectionIndex = index + 1;
+                            }
+                            
+                            previousSectionCompletions[sectionId] = isComplete;
+                        });
                     }
+                    
+                    renderBusinessPlanProgress(data.business_plan_progress);
+                    
+                    previousInitialFormComplete = isNowComplete;
                 }
                 
                 updateTiersAndPoints(data.points, data.current_tier, data.tiers);
@@ -719,59 +709,24 @@ updateTiersAndPoints(0, 'beginner', [
 ]);
 updateSendReportButton();
 
-const initialBusinessPlanProgress = [
-    {
-        section_id: 'section_0',
-        title: 'Section 0: Basic Information',
-        description: 'Your company and background details',
-        core_completed: [],
-        core_total: 6,
-        optional_completed: [],
-        optional_total: 0
-    },
-    {
-        section_id: 'section_1',
-        title: 'Section 1: The Big Picture',
-        description: 'Your Vision and Foundation',
-        core_completed: [],
-        core_total: 3,
-        optional_completed: [],
-        optional_total: 1
-    },
-    {
-        section_id: 'section_2',
-        title: 'Section 2: Your Market, Customers, and Offer',
-        description: 'Who you\'re serving and what you\'re selling',
-        core_completed: [],
-        core_total: 4,
-        optional_completed: [],
-        optional_total: 2
-    },
-    {
-        section_id: 'section_3',
-        title: 'Section 3: Operations and Go-to-Market',
-        description: 'How you\'ll run the business and reach customers',
-        core_completed: [],
-        core_total: 2,
-        optional_completed: [],
-        optional_total: 5
-    },
-    {
-        section_id: 'section_4',
-        title: 'Section 4: Finances, Risks, and Formalities',
-        description: 'Numbers, challenges, and legal setup',
-        core_completed: [],
-        core_total: 3,
-        optional_completed: [],
-        optional_total: 6
+async function loadInitialBusinessPlan() {
+    try {
+        const response = await fetch('/api/business-plan-structure');
+        const data = await response.json();
+        
+        if (data.business_plan_progress && data.business_plan_progress.length > 0) {
+            const initialContainer = document.getElementById('initialProgressContainer');
+            if (initialContainer) {
+                initialContainer.style.display = 'none';
+            }
+            renderBusinessPlanProgress(data.business_plan_progress);
+        }
+    } catch (error) {
+        console.error('Error loading business plan structure:', error);
     }
-];
-
-const initialContainer = document.getElementById('initialProgressContainer');
-if (initialContainer) {
-    initialContainer.style.display = 'none';
 }
-renderBusinessPlanProgress(initialBusinessPlanProgress);
+
+loadInitialBusinessPlan();
 
 const sendReportButton = document.getElementById('sendReportButton');
 const emailInput = document.getElementById('reportEmailInput');
