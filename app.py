@@ -1,4 +1,18 @@
 from flask import Flask, render_template, request, jsonify
+from openai import OpenAI
+import os
+import sys
+
+try:
+    from config.config import OPENAI_API_KEY
+except ImportError:
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+if not OPENAI_API_KEY:
+    print("Warning: OPENAI_API_KEY not found. Please set it in config/config.py or as an environment variable.")
+    sys.exit(1)
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -15,96 +29,114 @@ FORM_STEPS = [
 form_data = {}
 
 
-def get_mock_response(user_message, current_step):
-    user_lower = user_message.lower()
+def get_step_prompt(current_step, form_data):
+    step_descriptions = {
+        'company_name': "Ask for the company name. Be friendly and welcoming.",
+        'language': "Ask for the preferred language (e.g., English, Spanish, French, German).",
+        'sphere': "Ask what industry or business sphere the company operates in.",
+        'education': "Ask about the educational background (e.g., Bachelor's in Business, MBA, etc.).",
+        'experience': "Ask how many years of business experience they have.",
+        'location': "Ask where the business is located."
+    }
     
-    if current_step == 'company_name':
-        if len(user_message.strip()) > 1:
-            return {
-                'message': f"Great! I've noted your company name: {user_message}. What's your preferred language? ("
-                           f"e.g., English, Spanish, French, German)",
-                'step': 'language'
-            }
-        return {
-            'message': "Please provide your company name.",
-            'step': 'company_name'
-        }
+    collected_info = []
+    if form_data.get('company_name'):
+        collected_info.append(f"Company Name: {form_data['company_name']}")
+    if form_data.get('language'):
+        collected_info.append(f"Language: {form_data['language']}")
+    if form_data.get('sphere'):
+        collected_info.append(f"Business Sphere: {form_data['sphere']}")
+    if form_data.get('education'):
+        collected_info.append(f"Education: {form_data['education']}")
+    if form_data.get('experience'):
+        collected_info.append(f"Experience: {form_data['experience']}")
+    if form_data.get('location'):
+        collected_info.append(f"Location: {form_data['location']}")
     
-    if current_step == 'language':
-        lang_map = {
-            'english': 'English',
-            'spanish': 'Spanish',
-            'french': 'French',
-            'german': 'German'
-        }
-        detected_lang = None
-        for key, value in lang_map.items():
-            if key in user_lower:
-                detected_lang = value
-                break
-        
-        if detected_lang:
-            return {
-                'message': f"Perfect! I've set your language to {detected_lang}. Now, what sphere or industry does "
-                           f"your business operate in?",
-                'step': 'sphere'
-            }
-        return {
-            'message': "What's your preferred language? (e.g., English, Spanish, French, German)",
-            'step': 'language'
-        }
+    context = ""
+    if collected_info:
+        context = f"Information collected so far: {', '.join(collected_info)}. "
     
-    if current_step == 'sphere':
-        if len(user_message.strip()) > 2:
-            return {
-                'message': f"Got it! Your business is in {user_message}. What's your educational background?",
-                'step': 'education'
-            }
-        return {
-            'message': "Please tell me what industry or business sphere you're in.",
-            'step': 'sphere'
-        }
-    
-    if current_step == 'education':
-        if len(user_message.strip()) > 2:
-            return {
-                'message': f"Thanks! I've noted your education: {user_message}. How many years of experience do you "
-                           f"have in business?",
-                'step': 'experience'
-            }
-        return {
-            'message': "What's your educational background? (e.g., Bachelor's in Business, MBA, etc.)",
-            'step': 'education'
-        }
-    
-    if current_step == 'experience':
-        if len(user_message.strip()) > 0:
-            return {
-                'message': f"Excellent! {user_message} years of experience. Finally, where is your business located?",
-                'step': 'location'
-            }
-        return {
-            'message': "How many years of business experience do you have?",
-            'step': 'experience'
-        }
+    current_task = step_descriptions.get(current_step, "Continue the conversation naturally.")
     
     if current_step == 'location':
-        if len(user_message.strip()) > 2:
-            return {
-                'message': f"Perfect! Your business is located in {user_message}. Thank you for completing the form! "
-                           f"Is there anything else you'd like to add?",
-                'step': 'complete'
-            }
-        return {
-            'message': "Where is your business located?",
-            'step': 'location'
-        }
+        return f"""You are a friendly business form assistant helping to collect information. {context}
+Current task: {current_task}
+After collecting the location, thank them for completing the form and ask if there's anything else they'd like to add.
+Keep responses concise (1-2 sentences) and conversational."""
+    elif current_step == 'complete':
+        return f"""You are a friendly business form assistant. All required information has been collected:
+{', '.join(collected_info)}
+Thank them for completing the form and ask if there's anything else they'd like to discuss.
+Keep responses concise and conversational."""
+    else:
+        next_steps = []
+        for step in FORM_STEPS:
+            if step['id'] == current_step:
+                idx = FORM_STEPS.index(step)
+                if idx + 1 < len(FORM_STEPS):
+                    next_steps.append(step_descriptions[FORM_STEPS[idx + 1]['id']])
+                break
+        
+        next_hint = f" After collecting this information, you'll ask about: {next_steps[0] if next_steps else 'completion'}." if next_steps else ""
+        
+        return f"""You are a friendly business form assistant helping to collect information. {context}
+Current task: {current_task}{next_hint}
+Keep responses concise (1-2 sentences) and conversational. Acknowledge their input and naturally move to the next question."""
+
+
+def get_openai_response(user_message, current_step):
+    try:
+        system_prompt = get_step_prompt(current_step, form_data)
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.7,
+            max_tokens=150
+        )
+        
+        ai_message = response.choices[0].message.content.strip()
+        
+        should_advance = False
+        if current_step == 'company_name' and len(user_message.strip()) > 1:
+            should_advance = True
+        elif current_step == 'language' and len(user_message.strip()) > 1:
+            should_advance = True
+        elif current_step == 'sphere' and len(user_message.strip()) > 2:
+            should_advance = True
+        elif current_step == 'education' and len(user_message.strip()) > 2:
+            should_advance = True
+        elif current_step == 'experience' and len(user_message.strip()) > 0:
+            should_advance = True
+        elif current_step == 'location' and len(user_message.strip()) > 2:
+            should_advance = True
+        
+        if should_advance and current_step != 'complete':
+            next_step_idx = None
+            for idx, step in enumerate(FORM_STEPS):
+                if step['id'] == current_step:
+                    if idx + 1 < len(FORM_STEPS):
+                        next_step_idx = idx + 1
+                    else:
+                        next_step_idx = 'complete'
+                    break
+            
+            if next_step_idx == 'complete':
+                return {'message': ai_message, 'step': 'complete'}
+            elif next_step_idx is not None:
+                return {'message': ai_message, 'step': FORM_STEPS[next_step_idx]['id']}
+        
+        return {'message': ai_message, 'step': current_step}
     
-    return {
-        'message': "Thank you for providing all the information! Your form is complete. Is there anything else you'd "
-                   "like to discuss?",
-        'step': 'complete'
-    }
+    except Exception as e:
+        return {
+            'message': f"I apologize, but I encountered an error. Please try again. Error: {str(e)}",
+            'step': current_step
+        }
 
 
 @app.route('/')
@@ -151,7 +183,7 @@ def chat():
     elif current_step == 'location' and len(user_message.strip()) > 2:
         form_data['location'] = user_message
     
-    response = get_mock_response(user_message, current_step)
+    response = get_openai_response(user_message, current_step)
     
     completed_steps = []
     for step in FORM_STEPS:
