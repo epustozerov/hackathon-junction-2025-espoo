@@ -32,6 +32,7 @@ FORM_STEPS = [
 ]
 
 form_data = {}
+chat_history = []
 
 TIERS = [
     {'id': 'beginner', 'name': 'Beginner', 'points_required': 0, 'icon': '🌱'},
@@ -130,20 +131,43 @@ Acknowledge their input and naturally move to the next question."""
 
 
 def get_openai_response(user_message, current_step):
+    global chat_history
+    
     try:
-        system_prompt = get_step_prompt(current_step, form_data)
+        context_message = get_step_prompt(current_step, form_data)
+        
+        system_message = {
+            'role': 'system',
+            'content': context_message
+        }
+        
+        messages = [system_message]
+        
+        if chat_history:
+            messages.extend(chat_history[-10:])
+        
+        messages.append({
+            'role': 'user',
+            'content': user_message
+        })
         
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
+            messages=messages,
             temperature=0.7,
-            max_tokens=150
+            max_tokens=200
         )
         
         ai_message = response.choices[0].message.content.strip()
+        
+        chat_history.append({
+            'role': 'user',
+            'content': user_message
+        })
+        chat_history.append({
+            'role': 'assistant',
+            'content': ai_message
+        })
         
         should_advance = False
         if current_step == 'company_name' and len(user_message.strip()) > 1:
@@ -177,6 +201,9 @@ def get_openai_response(user_message, current_step):
         return {'message': ai_message, 'step': current_step}
     
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Chat API error: {error_details}")
         return {
             'message': f"I apologize, but I encountered an error. Please try again. Error: {str(e)}",
             'step': current_step
@@ -445,8 +472,9 @@ def send_report_manual():
 
 @app.route('/api/reset', methods=['POST'])
 def reset():
-    global form_data
+    global form_data, chat_history
     form_data = {}
+    chat_history = []
     return jsonify({'success': True})
 
 
