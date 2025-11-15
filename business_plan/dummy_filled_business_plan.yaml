@@ -14,26 +14,26 @@
 # ---
 
 # --- Core Questions ---
-"Business idea":
+ "Business idea":
   fill: "In a few sentences: what will you sell, and who will buy it? Keep it simple and clear."
   why: "This is your 'elevator pitch' and the foundation for everything else."
-  answer: "(empty)"
+  answer: "I'll sell high-quality specialty coffee and locally sourced pastries to young professionals and students in Helsinki."
 
 "Vision (3–5 years)":
   fill: "Imagine your business in 3-5 years. What does it look like? What impact are you making? Don't be afraid to dream a little."
   why: "This helps you stay motivated and guides your long-term decisions."
-  answer: "(empty)"
+  answer: "In 3-5 years, 'Helsinki Coffee Hub' will be a well-known spot for coffee lovers, with a potential second location. We'll be known for our community events and sustainable practices."
 
 "Competence / skills":
   fill: "What experience, skills, or passion do you have that relates to this business? Why are YOU the right person to do this?"
   why: "Your personal story and skills are your biggest asset. This builds trust with advisors and investors."
-  answer: "(empty)"
+  answer: "I have 5 years of experience as a barista in specialty coffee shops in London. I'm passionate about coffee and creating a welcoming community space. I've also completed a small business management course."
 
 # --- Optional Deeper Dive ---
 "Industry":
   fill: "Briefly describe your industry, typical price levels, and trends affecting you (e.g., seasonality, regulation, technology). Keep to 3–5 bullets."
   why: "Context for benchmarks in the calculator"
-  answer: "(empty)"
+  answer: "The specialty coffee shop market in Helsinki is growing. Key trends are sustainability, focus on high-quality beans, and demand for cozy work-friendly spaces. Price for a cappuccino is around 4-5 EUR."
 
 
 # ---
@@ -46,33 +46,33 @@
 "Customers (segments)":
   fill: "Describe 1-2 types of customers you want to serve (e.g., small cafes in Helsinki, busy parents). Are they consumers (B2C) or other businesses (B2B)?"
   why: "If you try to sell to everyone, you sell to no one. Focusing helps you find your first customers."
-  answer: "(empty)"
+  answer: "Our target customers are B2C: 1) University students aged 20-25 looking for a place to study. 2) Young professionals aged 25-40 who work remotely or want a high-quality coffee break."
 
 "Customer purchase motives":
   fill: "What specific problem, need, or desire does your product/service address for your ideal customer? Why would they pay for your solution?"
   why: "Successful businesses solve real problems. This is the core of your value."
-  answer: "(empty)"
+  answer: "We solve the need for a comfortable 'third place' that isn't home or work, offering excellent coffee and a productive atmosphere. Customers will pay for the quality of the products and the ambiance."
 
 "Products and services":
   fill: "List your main 1-3 products or services. How will you charge for them (e.g., per hour, fixed price, subscription)? What is a rough price point and your estimated cost per unit?"
   why: "This defines how your business will make money."
-  answer: "(empty)"
+  answer: "1. Specialty Coffee (Espresso, Cappuccino, etc.) - Price: €3.5-€5, Cost: €1. 2. Pastries (croissants, cakes) - Price: €4-€6, Cost: €2. 3. Co-working day pass - Price: €10 (includes one coffee)."
 
 "Competitive situation and competitors":
   fill: "Who are your top 2-3 competitors or alternatives? What is the main reason a customer would choose you over them? (e.g., better price, higher quality, more convenient, unique expertise)."
   why: "You need a clear reason for customers to choose you in a crowded market."
-  answer: "(empty)"
+  answer: "Competitors: Starbucks, Johan & Nyström. We will differentiate through a stronger community focus with regular events, ethically sourced beans from a single-origin supplier, and a more cozy, less corporate atmosphere."
 
 # --- Optional Deeper Dive ---
 "Customer Purchase Criteria":
   fill: "What 3–5 factors customers compare when choosing (e.g., price, speed, quality, location, reviews, warranty, language, payment options). Rank them by importance."
   why: "Enables demand, conversion, and pricing assumptions"
-  answer: "(empty)"
+  answer: "1. Coffee quality, 2. Ambiance/Atmosphere, 3. Location, 4. Price, 5. Wi-Fi speed."
 
 "Customer Risks":
   fill: "List things that might stop a customer from buying (e.g., price too high, trust, delivery delay, privacy concerns). Add how you will reduce each risk."
   why: "Enables demand, conversion, and pricing assumptions"
-  answer: "(empty)"
+  answer: "1. Price too high - We'll offer loyalty cards and student discounts. 2. Inconsistent quality - Rigorous barista training and quality control. 3. Crowded space - We will have a reservation system for the co-working spots."
 
 
 # ---
@@ -85,38 +85,38 @@
 "Market entry and launch plan":
   fill: "What are the first few practical steps you will take to get your first customer in the first 3 months? (e.g., build a simple website, contact 10 potential clients, run a small social media ad)."
   why: "A simple, actionable plan overcomes the fear of not knowing where to start."
-  answer: "(empty)"
+  answer: "Month 1: Secure location and start renovations. Month 2: Build social media presence and launch a simple website. Month 3: Host a soft-opening event for local influencers and community members. Run targeted Instagram ads."
 
 "Sales and marketing channels":
   fill: "How will your first customers hear about you? Pick 1-2 channels to start with (e.g., Instagram, local networking events, Google search, word-of-mouth)."
   why: "Focusing your marketing efforts saves time and money."
-  answer: "(empty)"
+  answer: "Primarily through Instagram to showcase our coffee and space. Secondly, through local partnerships with universities and co-working spaces. Word-of-mouth will be crucial."
 
 # --- Optional Deeper Dive ---
 "Production and logistics (goods)":
   fill: "If you sell goods: where you get them, minimum order sizes, lead times, shipping methods/costs, return process, and main cost drivers."
   why: "Determines variable costs and fulfillment risk"
-  answer: "(empty)"
+  answer: "Coffee beans from a local roaster (weekly delivery, 10kg min order). Pastries from a local bakery (daily delivery). Main cost drivers are raw ingredients (coffee beans, milk, flour)."
 
 "Delivery operations (services)":
   fill: "If you sell services: how you deliver, hours of operation, tools/software used, capacity per week, service level targets, and variable costs (e.g., travel, subcontracting)."
   why: "Determines variable costs and fulfillment risk"
-  answer: "(empty)"
+  answer: "We are a physical coffee shop. Hours: Mon-Fri 7am-7pm, Sat-Sun 9am-6pm. We will use a simple POS system. Capacity is about 40 seats."
 
 "Distribution network":
   fill: "List partners/channels that will sell or deliver your offer (marketplaces, resellers, distributors). Include expected share of sales and fees/commissions."
   why: "Affects ramp speed and unit economics"
-  answer: "(empty)"
+  answer: "Initially, all sales will be direct-to-consumer in our shop. We might explore using food delivery apps like Wolt or Foodora later (15-30% commission)."
 
 "Other third parties and partners important to the company":
   fill: "Suppliers, subcontractors, or advisors you rely on. For each: role and key terms (price, notice period)."
   why: "Delivery reliability and cost structure"
-  answer: "(empty)"
+  answer: "1. Coffee Roaster: Helsinki Roasting Co. (exclusive supplier). 2. Bakery: 'Leipomo X' for pastries. 3. Business Advisor from NewCo Helsinki."
 
 "Internationalization plans":
   fill: "If you plan to sell outside your country: target countries, timeline, language/currency needs, and any rules you must follow."
   why: "Guides funding size and milestones"
-  answer: "(empty)"
+  answer: "No plans for internationalization in the first 5 years. Focus is on the Helsinki market."
 
 
 # ---
@@ -129,45 +129,45 @@
 "Initial financing and startup costs":
   fill: "What are the essential things you need to buy to get started (e.g., laptop, materials, website domain)? How much cash do you need to cover costs for the first 3 months? (Estimates are fine!)"
   why: "This helps you understand your initial financial needs and whether you need a loan or funding."
-  answer: "(empty)"
+  answer: "Key costs: Rent deposit (€5000), espresso machine (€10000), furniture (€8000), initial inventory (€2000). Total startup cost estimated at €25,000. Need €15,000 for first 3 months operating costs. Financed through a personal loan and a small business grant."
 
 "SWOT-analysis":
   fill: "List your top 2 strengths, weaknesses, opportunities, and threats. Be honest! This is a great way to summarize your situation."
   why: "Acknowledging risks and strengths shows you are realistic and helps you prepare."
-  answer: "(empty)"
+  answer: "Strengths: Founder's expertise, high-quality product. Weaknesses: Lack of brand recognition, limited startup capital. Opportunities: Growing demand for specialty coffee, potential for community events. Threats: High competition, rising rent prices in Helsinki."
 
 "Background information (company basics)":
   fill: "What is your planned company name and legal form (e.g., sole trader/toiminimi, limited company/osakeyhtiö)? Who are the owners and what are the ownership percentages?"
   why: "These are basic administrative details needed for official registration."
-  answer: "(empty)"
+  answer: "Company Name: 'Helsinki Coffee Hub Oy'. Legal form: Limited company (osakeyhtiö). Owner: [My Name], 100% ownership."
 
 # --- Optional Deeper Dive ---
 "Profitability Timeline":
   fill: "Estimate monthly fixed costs, expected monthly sales for months 1–6, and when you break even. Include how much cash you need until break-even (runway)."
   why: "Core for the calculator, funding ask, and bank evaluation"
-  answer: "(empty)"
+  answer: "Monthly fixed costs: €5000 (rent, salaries). Estimated sales M1-3: €4000/month, M4-6: €7000/month. Break-even expected around month 8. Runway needed: €20,000."
 
 "Potential risks in the operating environment":
   fill: "Big external risks you cannot control (e.g., regulation changes, supplier issues, economic downturn). For each, note likelihood (low/med/high) and a simple backup plan."
   why: "Stress-tests financials and informs mitigation plans"
-  answer: "(empty)"
+  answer: "1. Supplier issues (med): Have backup suppliers for coffee and milk. 2. Economic downturn (low): Offer more affordable options and loyalty programs."
 
 "Intellectual property rights":
   fill: "Names/brands, domains, designs, or inventions. Say if registered/applied, and any next steps (e.g., file trademark)."
   why: "Defensibility and brand protection"
-  answer: "(empty)"
+  answer: "Domain 'helsinkicoffeehub.fi' is registered. Plan to register the name and logo as a trademark within the first year."
 
 "Permits and notices":
   fill: "Licenses/permits you may need (food, construction, health), who issues them, and expected timing/cost."
   why: "Bank risk and launch readiness"
-  answer: "(empty)"
+  answer: "Need a food license from the Finnish Food Authority (Evira) and a hygiene passport for all staff. Estimated cost €200, takes 2-4 weeks."
 
 "Insurance and contracts":
   fill: "What insurance you plan to have (liability, professional, product, property). Add estimated annual premium or a quote if available."
   why: "Risk mitigation and bank comfort"
-  answer: "(empty)"
+  answer: "We will have general liability insurance and property insurance. Estimated annual premium is €1,200."
 
 "Contracts (key contracts)":
   fill: "Any important contracts you need or already have (supplier, landlord, key customer). Note main terms (length, price, termination)."
   why: "Risk mitigation and bank comfort"
-  answer: "(empty)"
+  answer: "A 3-year lease agreement for the commercial space. A 1-year contract with our coffee bean supplier with fixed pricing."

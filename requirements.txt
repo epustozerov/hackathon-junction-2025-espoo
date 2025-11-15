@@ -1,3 +1,5 @@
 Flask==3.1.2
 openai==2.8.0
 httpx==0.28.1
+pypandoc==1.16.2
+pypandoc_binary==1.16.2
