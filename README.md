@@ -24,15 +24,15 @@ We provide a Flask web interface for seamless business form completion:
 python app.py
 ```
 
-Access at `http://127.0.0.1:5000`
+Access at `http://127.0.0.1:5001`
 
-The web app guides users through collecting essential business information:
-- Company Name
-- Preferred Language
-- Business Sphere/Industry
-- Education Background
-- Business Experience
-- Location
+The web app guides users through:
+- **Initial Form**: Company name, preferred language, business sphere, education, experience, location
+- **Business Plan Questions**: Multi-section business plan with core and optional questions
+- **Progress Tracking**: Visual progress with points-based tier system
+- **Document Generation**: Automatic DOCX business plan generation
+- **Email Reports**: Automatic email delivery with business plan attachment
+- **Voice Features**: Text-to-speech and audio transcription support
 
 📊 Form Data Structure
 
@@ -62,31 +62,32 @@ Form Completion Flow
 {
   "response": "Bot response message",
   "completed_steps": ["company_name", "language", ...],
-  "form_data": {
-    "company_name": "Example Company",
-    "language": "English",
-    "sphere": "Technology",
-    "education": "MBA",
-    "experience": "5 years",
-    "location": "Espoo"
-  }
+  "business_plan_progress": [...],
+  "form_data": {...},
+  "points": 15,
+  "current_tier": "experienced_business_professional",
+  "email_collected": true,
+  "report_sent": false
 }
 ```
 
 **Progress Tracking:**
 
-- Visual progress bar updates in real-time as users complete each step
-- Active step highlighting shows current focus
-- Completed steps marked with checkmarks
-- Smooth transitions between form stages
+- Real-time progress tracking for initial form and business plan sections
+- Points-based tier system (Beginner → Master Entrepreneur)
+- Section-by-section completion status
+- Core and optional question tracking
 
 🔧 Technical Architecture
 
 **Backend:**
 - Flask web framework for API endpoints
-- Mock response system (ready for Google Cloud AI integration)
-- Step-by-step form validation logic
-- RESTful API design
+- OpenAI GPT-4o-mini for conversational responses
+- Answer validation with retry logic and gibberish detection
+- YAML-based business plan structure
+- DOCX document generation
+- Email service with SMTP integration
+- Text-to-speech and audio transcription (OpenAI Whisper/TTS)
 
 **Frontend:**
 - Modern, responsive HTML/CSS/JavaScript
@@ -96,17 +97,19 @@ Form Completion Flow
 
 **API Endpoints:**
 - `GET /` - Main application page
+- `GET /api/business-plan-structure` - Get business plan structure
 - `POST /api/chat` - Send message and receive bot response with progress updates
-- `POST /api/reset` - Reset form data (for testing)
+- `POST /api/tts` - Convert text to speech audio
+- `POST /api/transcribe` - Transcribe audio to text
+- `POST /api/send-report` - Manually send email report
+- `GET /api/download-report` - Download business plan as DOCX
+- `POST /api/reset` - Reset form data
 
 🚀 Future Enhancements
 
-- **Multi-language Support**: Full internationalization for Espoo's diverse entrepreneur community
 - **Form Data Persistence**: Save progress and allow users to resume later
-- **Export Functionality**: Generate formatted business information documents
 - **Integration with Business Espoo**: Connect with existing advisory service workflows
 - **Personalized Recommendations**: AI-driven suggestions based on collected information
-- **Document Preparation**: Help users prepare documents needed for advisory meetings
 
 💡 Impact & Alignment with Espoo's Vision
 
