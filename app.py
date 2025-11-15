@@ -3,8 +3,7 @@ from openai import OpenAI
 import os
 import sys
 import re
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import smtplib
 from datetime import datetime
 
 try:
@@ -763,36 +762,38 @@ Thank you for providing your information!
 
 def send_report_email(form_data):
     try:
-        try:
-            from config.config import MAILTRAP_API_TOKEN, FROM_EMAIL
-            api_token = MAILTRAP_API_TOKEN
-            from_email = FROM_EMAIL
-        except ImportError:
-            api_token = os.environ.get('MAILTRAP_API_TOKEN', '')
-            from_email = os.environ.get('FROM_EMAIL', 'noreply@example.com')
-        
-        if not api_token:
-            print("Warning: Mailtrap API token not found. Report will not be sent.")
-            return False
-        
-        to_email = form_data.get('email')
-        if not to_email:
-            return False
-        
-        report_text = generate_report(form_data)
-        
-        msg = MIMEMultipart()
-        msg['From'] = email_config['from_email']
-        msg['To'] = to_email
-        msg['Subject'] = 'Business Information Form Report'
-        
-        msg.attach(MIMEText(report_text, 'plain'))
-        
-        with smtplib.SMTP(email_config['server'], email_config['port']) as server:
+        from config.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_EMAIL
+    except ImportError:
+        SMTP_SERVER = os.environ.get('SMTP_SERVER', 'live.smtp.mailtrap.io')
+        SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))
+        SMTP_USERNAME = os.environ.get('SMTP_USERNAME', 'api')
+        SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+        FROM_EMAIL = os.environ.get('FROM_EMAIL', 'hello@ainoespoo.com')
+    
+    if not SMTP_PASSWORD:
+        print("Warning: SMTP password not found. Report will not be sent.")
+        return False
+    
+    sender = FROM_EMAIL
+    receiver = form_data.get('email')
+    
+    if not receiver:
+        return False
+    
+    report_text = generate_report(form_data)
+    
+    message = f"""\
+Subject: Business Information Form Report
+To: {receiver}
+From: {sender}
+
+{report_text}"""
+    
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
-            server.login(email_config['username'], email_config['password'])
-            server.send_message(msg)
-        
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(sender, receiver, message)
         return True
     except Exception as e:
         print(f"Error sending email: {str(e)}")
