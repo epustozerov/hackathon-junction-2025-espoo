@@ -1,6 +1,12 @@
 import os
 import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 from datetime import datetime
+from services.docx_service import create_docx_from_yaml
+from services.yaml_service import get_yaml_path
 
 
 def generate_report(form_data):
@@ -34,7 +40,7 @@ Thank you for providing your information!
     return report
 
 
-def send_report_email(form_data):
+def send_report_email(form_data, yaml_path=None):
     try:
         from config.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_EMAIL
     except ImportError:
@@ -54,22 +60,54 @@ def send_report_email(form_data):
     if not receiver:
         return False
     
+    if yaml_path is None:
+        yaml_path = get_yaml_path()
+    
     report_text = generate_report(form_data)
     
-    message = f"""\
-Subject: Business Information Form Report
-To: {receiver}
-From: {sender}
-
-{report_text}"""
+    msg = MIMEMultipart()
+    msg['From'] = sender
+    msg['To'] = receiver
+    msg['Subject'] = 'Business Information Form Report'
+    
+    msg.attach(MIMEText(report_text, 'plain'))
+    
+    docx_path = None
+    try:
+        docx_path = create_docx_from_yaml(yaml_path)
+        if docx_path and os.path.exists(docx_path):
+            with open(docx_path, 'rb') as attachment:
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(attachment.read())
+            
+            encoders.encode_base64(part)
+            part.add_header(
+                'Content-Disposition',
+                f'attachment; filename=business_plan.docx',
+            )
+            msg.attach(part)
+    except Exception as e:
+        print(f"Warning: Could not create or attach DOCX: {str(e)}")
     
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(sender, receiver, message)
+            server.sendmail(sender, receiver, msg.as_string())
+        
+        if docx_path and os.path.exists(docx_path):
+            try:
+                os.remove(docx_path)
+            except:
+                pass
+        
         return True
     except Exception as e:
         print(f"Error sending email: {str(e)}")
+        if docx_path and os.path.exists(docx_path):
+            try:
+                os.remove(docx_path)
+            except:
+                pass
         raise
 

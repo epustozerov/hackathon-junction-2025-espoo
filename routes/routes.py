@@ -1,6 +1,7 @@
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, send_file
 import re
 import base64
+import os
 from constants import FORM_STEPS, TIERS
 from models.state import form_data, chat_history, question_retries, business_plan_sections, reset_state
 from services.business_plan_service import (
@@ -13,6 +14,8 @@ from services.business_plan_service import (
 from services.validation_service import validate_answer
 from services.chat_service import get_openai_response, get_tts_audio, transcribe_audio
 from services.email_service import send_report_email
+from services.yaml_service import update_yaml_with_answer, get_yaml_path
+from services.docx_service import create_docx_from_yaml
 
 
 def register_routes(app):
@@ -95,6 +98,8 @@ def register_routes(app):
                     
                     if answer_valid:
                         form_data[question['id']] = user_message
+                        yaml_path = get_yaml_path()
+                        update_yaml_with_answer(yaml_path, question['label'], user_message)
                         if current_step in question_retries:
                             del question_retries[current_step]
                     else:
@@ -150,7 +155,8 @@ def register_routes(app):
             section, question, _ = get_current_business_plan_question(form_data, business_plan_sections)
             if not section:
                 try:
-                    send_report_email(form_data)
+                    yaml_path = get_yaml_path()
+                    send_report_email(form_data, yaml_path=yaml_path)
                     form_data['report_sent'] = True
                     report_sent = True
                 except Exception as e:
@@ -231,12 +237,56 @@ def register_routes(app):
         report_data['email'] = email
         
         try:
-            send_report_email(report_data)
+            yaml_path = get_yaml_path()
+            send_report_email(report_data, yaml_path=yaml_path)
             if not form_data.get('email'):
                 form_data['email'] = email
             return jsonify({'success': True, 'message': 'Report sent successfully!'})
         except Exception as e:
             return jsonify({'error': f'Failed to send report: {str(e)}'}), 500
+
+    @app.route('/api/download-report', methods=['GET'])
+    def download_report():
+        docx_path = None
+        try:
+            yaml_path = get_yaml_path()
+            docx_path = create_docx_from_yaml(yaml_path)
+            
+            if docx_path and os.path.exists(docx_path):
+                def remove_file():
+                    try:
+                        if docx_path and os.path.exists(docx_path):
+                            os.remove(docx_path)
+                    except Exception as e:
+                        print(f"Error removing temporary DOCX file: {str(e)}")
+                
+                response = send_file(
+                    docx_path,
+                    mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    as_attachment=True,
+                    download_name='business_plan.docx'
+                )
+                
+                try:
+                    if hasattr(response, 'call_on_close'):
+                        response.call_on_close(remove_file)
+                except:
+                    import threading
+                    threading.Timer(30.0, remove_file).start()
+                
+                return response
+            else:
+                return jsonify({'error': 'Failed to generate document'}), 500
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Document download error: {error_details}")
+            if docx_path and os.path.exists(docx_path):
+                try:
+                    os.remove(docx_path)
+                except:
+                    pass
+            return jsonify({'error': f'Failed to generate document: {str(e)}'}), 500
 
     @app.route('/api/reset', methods=['POST'])
     def reset():

@@ -310,7 +310,7 @@ function updateSendReportButton() {
         
         if (isValidEmail) {
             sendReportButton.disabled = false;
-            sendReportButton.title = 'Send current report to ' + email;
+            sendReportButton.title = 'Send current business plan to ' + email;
         } else {
             sendReportButton.disabled = true;
             sendReportButton.title = 'Please enter a valid email address';
@@ -348,14 +348,14 @@ async function sendReportManually() {
         const data = await response.json();
         
         if (response.ok) {
-            addMessage('✓ Report has been sent to ' + email + '!', false);
-            sendReportButton.querySelector('span').textContent = 'Report Sent!';
+            addMessage('✓ Business plan has been sent to ' + email + '!', false);
+            sendReportButton.querySelector('span').textContent = 'Business Plan Sent!';
             setTimeout(() => {
                 sendReportButton.querySelector('span').textContent = originalText;
                 updateSendReportButton();
             }, 2000);
         } else {
-            addMessage('Sorry, there was an error sending the report: ' + (data.error || 'Unknown error'), false);
+            addMessage('Sorry, there was an error sending the business plan: ' + (data.error || 'Unknown error'), false);
             sendReportButton.querySelector('span').textContent = originalText;
             updateSendReportButton();
         }
@@ -595,7 +595,7 @@ async function sendMessage() {
                 
                 if (data.report_sent) {
                     setTimeout(() => {
-                        addMessage('✓ Report has been sent to your email address!', false);
+                        addMessage('✓ Business plan has been sent to your email address!', false);
                     }, 1000);
                 }
                 
@@ -728,11 +728,63 @@ async function loadInitialBusinessPlan() {
 
 loadInitialBusinessPlan();
 
+async function downloadReport() {
+    const downloadButton = document.getElementById('downloadReportButton');
+    
+    if (!downloadButton) {
+        return;
+    }
+    
+    downloadButton.disabled = true;
+    const originalText = downloadButton.querySelector('span').textContent;
+    downloadButton.querySelector('span').textContent = 'Generating...';
+    
+    try {
+        const response = await fetch('/api/download-report', {
+            method: 'GET',
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'business_plan.docx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            addMessage('✓ Business plan document downloaded successfully!', false);
+            downloadButton.querySelector('span').textContent = 'Downloaded!';
+            setTimeout(() => {
+                downloadButton.querySelector('span').textContent = originalText;
+                downloadButton.disabled = false;
+            }, 2000);
+        } else {
+            const data = await response.json();
+            addMessage('Sorry, there was an error generating the document: ' + (data.error || 'Unknown error'), false);
+            downloadButton.querySelector('span').textContent = originalText;
+            downloadButton.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        addMessage('Sorry, there was an error connecting to the server.', false);
+        downloadButton.querySelector('span').textContent = originalText;
+        downloadButton.disabled = false;
+    }
+}
+
 const sendReportButton = document.getElementById('sendReportButton');
+const downloadReportButton = document.getElementById('downloadReportButton');
 const emailInput = document.getElementById('reportEmailInput');
 
 if (sendReportButton) {
     sendReportButton.addEventListener('click', sendReportManually);
+}
+
+if (downloadReportButton) {
+    downloadReportButton.addEventListener('click', downloadReport);
 }
 
 if (emailInput) {
