@@ -18,6 +18,22 @@ We provide a Flask web interface for seamless business form completion:
 - **Multi-language support** ready for international entrepreneurs
 - **Responsive design** accessible on various devices
 
+
+**Screenshots**
+
+**First Steps**<br>
+<img src="resources/screenshots/First Steps.png" alt="First Steps" width="700"><br>
+The chatbot guides users through the initial form collection, gathering company name, preferred language, business sphere, education, experience, and location with real-time progress tracking.
+
+**Business questions**<br>
+<img src="resources/screenshots/Business questions.png" alt="Business questions*" width="700"><br>
+Multi-section business plan questionnaire with core and optional questions, showing progress across sections and the points-based tier system.
+
+**Data Export**<br>
+<img src="resources/screenshots/Data Export.png" alt="Data Export" width="700"><br>
+Download the completed business plan as a DOCX document or receive it via email with all collected information formatted and ready for advisory meetings.
+
+
 **Quick Start:**
 
 ```bash
