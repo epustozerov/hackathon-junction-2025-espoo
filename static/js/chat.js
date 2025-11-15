@@ -245,23 +245,27 @@ function updateBusinessPlanProgress(businessPlanProgress) {
         
         const progressSteps = Array.from(stepsDiv.querySelectorAll('.progress-step'));
         const allCompleted = [...sectionProgress.core_completed, ...sectionProgress.optional_completed];
+        const allSkipped = [...(sectionProgress.core_skipped || []), ...(sectionProgress.optional_skipped || [])];
+        const allProcessed = [...allCompleted, ...allSkipped];
         
         progressSteps.forEach((step, index) => {
             const stepId = step.dataset.stepId;
-            step.classList.remove('completed', 'active');
+            step.classList.remove('completed', 'active', 'skipped');
             
             if (allCompleted.includes(stepId)) {
                 step.classList.add('completed');
+            } else if (allSkipped.includes(stepId)) {
+                step.classList.add('skipped');
             }
         });
         
-        const firstIncompleteIndex = progressSteps.findIndex(
-            step => !allCompleted.includes(step.dataset.stepId)
+        const firstUnprocessedIndex = progressSteps.findIndex(
+            step => !allProcessed.includes(step.dataset.stepId)
         );
         
-        if (firstIncompleteIndex !== -1) {
-            progressSteps[firstIncompleteIndex].classList.add('active');
-        } else if (allCompleted.length === 0 && progressSteps.length > 0) {
+        if (firstUnprocessedIndex !== -1) {
+            progressSteps[firstUnprocessedIndex].classList.add('active');
+        } else if (allProcessed.length === 0 && progressSteps.length > 0) {
             progressSteps[0].classList.add('active');
         }
     });

@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, jsonify
 from openai import OpenAI
 import os
 import sys
-import smtplib
 import re
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -154,6 +153,7 @@ BUSINESS_PLAN_SECTIONS = load_business_plan_from_yaml()
 
 form_data = {}
 chat_history = []
+question_retries = {}
 
 TIERS = [
     {'id': 'beginner', 'name': 'Beginner', 'points_required': 0, 'icon': '🌱'},
@@ -167,25 +167,27 @@ TIERS = [
 def calculate_points(form_data):
     points = 0
     
-    if form_data.get('company_name'):
+    if form_data.get('company_name') and form_data.get('company_name') != '':
         points += 1
-    if form_data.get('language'):
+    if form_data.get('language') and form_data.get('language') != '':
         points += 1
-    if form_data.get('sphere'):
+    if form_data.get('sphere') and form_data.get('sphere') != '':
         points += 1
-    if form_data.get('education'):
+    if form_data.get('education') and form_data.get('education') != '':
         points += 1
-    if form_data.get('experience'):
+    if form_data.get('experience') and form_data.get('experience') != '':
         points += 1
-    if form_data.get('location'):
+    if form_data.get('location') and form_data.get('location') != '':
         points += 1
     
     for section in BUSINESS_PLAN_SECTIONS:
         for question in section['core_questions']:
-            if form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value and question_value != '':
                 points += 3
         for question in section['optional_questions']:
-            if form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value and question_value != '':
                 points += 5
     
     return points
@@ -201,16 +203,18 @@ def get_current_tier(points):
 
 
 def is_initial_form_complete(form_data):
-    return all(form_data.get(step['id']) for step in FORM_STEPS)
+    return all(form_data.get(step['id']) and form_data.get(step['id']) != '' for step in FORM_STEPS)
 
 
 def get_current_business_plan_question(form_data):
     for section in BUSINESS_PLAN_SECTIONS:
         for question in section['core_questions']:
-            if not form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value is None:
                 return section, question, 'core'
         for question in section['optional_questions']:
-            if not form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value is None:
                 return section, question, 'optional'
     return None, None, None
 
@@ -227,10 +231,13 @@ def get_business_plan_progress(form_data):
         'optional_completed': [],
         'optional_total': 0,
         'core_questions': [],
-        'optional_questions': []
+        'optional_questions': [],
+        'core_skipped': [],
+        'optional_skipped': []
     }
     for step in FORM_STEPS:
-        if form_data.get(step['id']):
+        step_value = form_data.get(step['id'])
+        if step_value and step_value != '':
             preliminary_progress['core_completed'].append(step['id'])
     progress.append(preliminary_progress)
     
@@ -244,19 +251,88 @@ def get_business_plan_progress(form_data):
             'optional_completed': [],
             'optional_total': len(section['optional_questions']),
             'core_questions': section['core_questions'],
-            'optional_questions': section['optional_questions']
+            'optional_questions': section['optional_questions'],
+            'core_skipped': [],
+            'optional_skipped': []
         }
         for question in section['core_questions']:
-            if form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value == '':
+                section_progress['core_skipped'].append(question['id'])
+            elif question_value and question_value != '':
                 section_progress['core_completed'].append(question['id'])
         for question in section['optional_questions']:
-            if form_data.get(question['id']):
+            question_value = form_data.get(question['id'])
+            if question_value == '':
+                section_progress['optional_skipped'].append(question['id'])
+            elif question_value and question_value != '':
                 section_progress['optional_completed'].append(question['id'])
         progress.append(section_progress)
     return progress
 
 
-def get_step_prompt(current_step, form_data):
+def validate_answer(user_message, current_step, question_info=None):
+    if not question_info:
+        return True
+    
+    user_message_clean = user_message.strip()
+    
+    if len(user_message_clean) < 2:
+        return False
+    
+    if user_message_clean.isdigit() and len(user_message_clean) > 3:
+        return False
+    
+    if user_message_clean.replace(' ', '').isdigit() and len(user_message_clean.replace(' ', '')) > 3:
+        return False
+    
+    if len(set(user_message_clean.replace(' ', ''))) < 3 and len(user_message_clean) > 5:
+        return False
+    
+    question_label = question_info.get('label', '')
+    question_fill = question_info.get('fill', '')
+    
+    validation_prompt = f"""You are validating if a user's answer appropriately addresses a business plan question.
+
+Question: "{question_label}"
+Question context: {question_fill}
+
+User's answer: "{user_message}"
+
+Determine if the user's answer:
+1. Actually addresses the question being asked
+2. Provides meaningful information relevant to the question
+3. Is not just random numbers, gibberish, or meaningless text
+4. Is not just a generic response, question, or unrelated comment
+5. Contains actual words or meaningful content (not just digits or symbols)
+
+Examples of INVALID answers:
+- Random numbers like "5645646" or "123456"
+- Gibberish like "asdfgh" or "qwerty"
+- Single words that don't answer the question
+- Unrelated comments or questions
+
+Respond with ONLY "YES" if the answer is appropriate and addresses the question, or "NO" if it does not address the question properly or is nonsensical."""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {'role': 'system', 'content': validation_prompt},
+                {'role': 'user', 'content': 'Validate this answer.'}
+            ],
+            temperature=0.3,
+            max_tokens=10
+        )
+        
+        result = response.choices[0].message.content.strip().upper()
+        return result.startswith('YES')
+    except Exception as e:
+        print(f"Validation error: {str(e)}")
+        return True
+
+
+def get_step_prompt(current_step, form_data, is_retry=False, is_skipping=False):
     if current_step and current_step.startswith('bp_'):
         section, question, question_type = get_current_business_plan_question(form_data)
         if section and question:
@@ -274,9 +350,15 @@ def get_step_prompt(current_step, form_data):
             if question_type == 'optional':
                 question_instruction += " (This is an optional deeper dive question - they can skip if they prefer.)"
             
+            retry_note = ""
+            if is_retry:
+                retry_note = " The user's previous answer didn't seem to address the question properly or was unclear (it might have been random numbers, gibberish, or unrelated text). Please politely let them know you didn't understand their answer and ask the same question again. Be encouraging and supportive. If they don't answer properly this time, we'll move on to the next question."
+            elif is_skipping:
+                retry_note = " The user didn't provide a clear answer to the previous question after two attempts, so we're moving on. Please ask the next question naturally and encouragingly."
+            
             return f"""You are a friendly business advisor assistant helping create a comprehensive business plan. {context}
 {section_info}
-Now ask them: "{question['label']}" - {question['fill']}
+Now ask them: "{question['label']}" - {question['fill']}{retry_note}
 Keep responses concise (1-2 sentences) and conversational. Be encouraging and supportive. Make sure to actually ask the question directly."""
         else:
             return """You are a friendly business advisor assistant. All business plan questions have been completed.
@@ -345,17 +427,21 @@ Keep responses concise and conversational."""
         next_hint = (f" After collecting this information, you'll ask about:"
                      f" {next_steps[0] if next_steps else 'completion'}.") if next_steps else ""
         
+        retry_note_initial = ""
+        if is_retry:
+            retry_note_initial = " The user's previous answer was unclear or didn't make sense (it might have been random numbers, gibberish, or unrelated text). Please politely let them know you didn't understand their answer and ask the same question again. Be encouraging and supportive."
+        
         return f"""You are a friendly business form assistant helping to collect information. {context}
-Current task: {current_task}{next_hint}
+Current task: {current_task}{retry_note_initial}{next_hint}
 Keep responses concise (1-2 sentences) and conversational. 
 Acknowledge their input and naturally move to the next question."""
 
 
-def get_openai_response(user_message, current_step):
+def get_openai_response(user_message, current_step, is_retry=False, is_skipping=False):
     global chat_history
     
     try:
-        context_message = get_step_prompt(current_step, form_data)
+        context_message = get_step_prompt(current_step, form_data, is_retry=is_retry, is_skipping=is_skipping)
         
         system_message = {
             'role': 'system',
@@ -447,6 +533,8 @@ def get_business_plan_structure():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    global question_retries
+    
     data = request.json
     user_message = data.get('message', '').strip()
     
@@ -455,6 +543,10 @@ def chat():
     
     initial_form_complete = is_initial_form_complete(form_data)
     current_step = None
+    answer_valid = True
+    question_info = None
+    is_retry = False
+    is_skipping = False
     
     if not initial_form_complete:
         for step in FORM_STEPS:
@@ -462,7 +554,18 @@ def chat():
                 current_step = step['id']
                 break
         
-        if current_step == 'company_name' and len(user_message.strip()) > 1:
+        user_message_clean = user_message.strip()
+        
+        is_nonsensical = False
+        if len(user_message_clean) > 3:
+            if user_message_clean.isdigit() or user_message_clean.replace(' ', '').isdigit():
+                is_nonsensical = True
+            elif len(set(user_message_clean.replace(' ', ''))) < 3 and len(user_message_clean) > 5:
+                is_nonsensical = True
+        
+        if is_nonsensical:
+            is_retry = True
+        elif current_step == 'company_name' and len(user_message_clean) > 1:
             form_data['company_name'] = user_message
         elif current_step == 'language':
             lang_map = {
@@ -478,20 +581,40 @@ def chat():
                     break
             if not form_data.get('language'):
                 form_data['language'] = user_message
-        elif current_step == 'sphere' and len(user_message.strip()) > 2:
+        elif current_step == 'sphere' and len(user_message_clean) > 2:
             form_data['sphere'] = user_message
-        elif current_step == 'education' and len(user_message.strip()) > 2:
+        elif current_step == 'education' and len(user_message_clean) > 2:
             form_data['education'] = user_message
-        elif current_step == 'experience' and len(user_message.strip()) > 0:
+        elif current_step == 'experience' and len(user_message_clean) > 0:
             form_data['experience'] = user_message
-        elif current_step == 'location' and len(user_message.strip()) > 2:
+        elif current_step == 'location' and len(user_message_clean) > 2:
             form_data['location'] = user_message
     else:
         section, question, question_type = get_current_business_plan_question(form_data)
         if section and question:
             current_step = f"bp_{question['id']}"
+            question_info = question
+            
             if len(user_message.strip()) > 2:
-                form_data[question['id']] = user_message
+                answer_valid = validate_answer(user_message, current_step, question_info)
+                
+                if answer_valid:
+                    form_data[question['id']] = user_message
+                    if current_step in question_retries:
+                        del question_retries[current_step]
+                else:
+                    retry_count = question_retries.get(current_step, 0)
+                    if retry_count < 1:
+                        question_retries[current_step] = retry_count + 1
+                        is_retry = True
+                    else:
+                        if current_step in question_retries:
+                            del question_retries[current_step]
+                        form_data[question['id']] = ''
+                        section, next_question, _ = get_current_business_plan_question(form_data)
+                        if next_question:
+                            current_step = f"bp_{next_question['id']}"
+                            is_skipping = True
         else:
             current_step = 'bp_complete'
     
@@ -509,7 +632,7 @@ def chat():
     if current_step is None:
         current_step = 'complete' if not initial_form_complete else 'bp_complete'
     
-    response = get_openai_response(user_message, current_step)
+    response = get_openai_response(user_message, current_step, is_retry=is_retry, is_skipping=is_skipping)
     
     completed_steps = []
     for step in FORM_STEPS:
@@ -640,27 +763,16 @@ Thank you for providing your information!
 
 def send_report_email(form_data):
     try:
-        email_config = {}
         try:
-            from config.config import SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, FROM_EMAIL
-            email_config = {
-                'server': SMTP_SERVER,
-                'port': SMTP_PORT,
-                'username': SMTP_USERNAME,
-                'password': SMTP_PASSWORD,
-                'from_email': FROM_EMAIL
-            }
+            from config.config import MAILTRAP_API_TOKEN, FROM_EMAIL
+            api_token = MAILTRAP_API_TOKEN
+            from_email = FROM_EMAIL
         except ImportError:
-            email_config = {
-                'server': os.environ.get('SMTP_SERVER', 'smtp.gmail.com'),
-                'port': int(os.environ.get('SMTP_PORT', '587')),
-                'username': os.environ.get('SMTP_USERNAME', ''),
-                'password': os.environ.get('SMTP_PASSWORD', ''),
-                'from_email': os.environ.get('FROM_EMAIL', 'noreply@example.com')
-            }
+            api_token = os.environ.get('MAILTRAP_API_TOKEN', '')
+            from_email = os.environ.get('FROM_EMAIL', 'noreply@example.com')
         
-        if not email_config['username'] or not email_config['password']:
-            print("Warning: Email configuration not found. Report will not be sent.")
+        if not api_token:
+            print("Warning: Mailtrap API token not found. Report will not be sent.")
             return False
         
         to_email = form_data.get('email')
@@ -717,9 +829,10 @@ def send_report_manual():
 
 @app.route('/api/reset', methods=['POST'])
 def reset():
-    global form_data, chat_history
+    global form_data, chat_history, question_retries
     form_data = {}
     chat_history = []
+    question_retries = {}
     return jsonify({'success': True})
 
 

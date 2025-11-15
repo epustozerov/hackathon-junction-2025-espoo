@@ -458,6 +458,28 @@ body {
     font-weight: 600;
 }
 
+.progress-step.skipped .step-circle {
+    background-color: var(--text-muted);
+    border-color: var(--text-muted);
+}
+
+.progress-step.skipped .step-circle::after {
+    content: '−';
+    color: var(--bg-primary);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.progress-step.skipped .step-connector {
+    background-color: var(--text-muted);
+}
+
+.progress-step.skipped .step-label {
+    color: var(--text-muted);
+    font-weight: 400;
+    text-decoration: line-through;
+}
+
 .progress-step:last-child .step-connector {
     display: none;
 }
