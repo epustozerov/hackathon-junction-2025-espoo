@@ -12,6 +12,7 @@ We provide a Flask web interface for seamless business form completion:
 
 **Web Application Features:**
 
+- **Customized AI assistant** with specialized knowledge of business documents and resources
 - **ChatGPT-style chat interface** for natural, conversational form completion
 - **Visual progress tracker** showing completion status of each form step
 - **Real-time validation** and guidance throughout the process
@@ -33,6 +34,17 @@ Multi-section business plan questionnaire with core and optional questions, show
 <img src="resources/screenshots/Data Export.png" alt="Data Export" width="700"><br>
 Download the completed business plan as a DOCX document or receive it via email with all collected information formatted and ready for advisory meetings.
 
+### Demo Video
+
+Watch the full demo video showcasing Aino in action:
+
+<a href="https://www.youtube.com/watch?v=pGLmcPnXBgw"><img src="https://img.youtube.com/vi/pGLmcPnXBgw/maxresdefault.jpg" alt="Demo Video" width="700"></a><br>
+[Watch on YouTube](https://www.youtube.com/watch?v=pGLmcPnXBgw)
+
+### Project Presentation
+
+View the project presentation: [Aino. Business Advisory Service 2.0.pdf](resources/presentation/Aino.%20Business%20Advisory%20Service%202.0.pdf)
+
 ### Quick Start
 
 ```bash
@@ -43,33 +55,15 @@ Access at `http://127.0.0.1:5001`
 
 The web app guides users through:
 - **Initial Form**: Company name, preferred language, business sphere, education, experience, location
-- **Business Plan Questions**: Multi-section business plan with core and optional questions
+- **Business Plan Questions**: Multi-section business plan with core and optional questions, with validation and retry logic
 - **Progress Tracking**: Visual progress with points-based tier system
 - **Document Generation**: Automatic DOCX business plan generation
-- **Email Reports**: Automatic email delivery with business plan attachment
+- **Email Reports**: Automatic email delivery with business plan attachment when form is complete (email extracted from conversation)
 - **Voice Features**: Text-to-speech and audio transcription support
 
 ### Form Data Structure
 
 The system collects structured business information through conversational dialogue. Here's the data structure:
-
-**Form Steps:**
-
-```
-Form Completion Flow
-├── company_name          # Business name
-│   └── Collected via: Natural conversation
-├── language              # Preferred language (English, Spanish, French, German, etc.)
-│   └── Collected via: Language selection with intelligent detection
-├── sphere                # Business industry/sphere
-│   └── Collected via: Open-ended industry description
-├── education             # Educational background
-│   └── Collected via: Educational qualification input
-├── experience            # Years of business experience
-│   └── Collected via: Experience level input
-└── location              # Business location
-    └── Collected via: Location specification
-```
 
 **API Response Structure:**
 
@@ -78,9 +72,11 @@ Form Completion Flow
   "response": "Bot response message",
   "completed_steps": ["company_name", "language", ...],
   "business_plan_progress": [...],
+  "initial_form_complete": true,
   "form_data": {...},
   "points": 15,
   "current_tier": "experienced_business_professional",
+  "tiers": [...],
   "email_collected": true,
   "report_sent": false
 }
@@ -89,20 +85,22 @@ Form Completion Flow
 **Progress Tracking:**
 
 - Real-time progress tracking for initial form and business plan sections
-- Points-based tier system (Beginner → Master Entrepreneur)
+- Points-based tier system: Beginner (0) → Motivated Entrepreneur (3) → Growing Entrepreneur (6) → Experienced Business Professional (10) → Master Entrepreneur (20)
+- Points allocation: Initial form steps (1 point each), core questions (3 points each), optional questions (5 points each)
 - Section-by-section completion status
-- Core and optional question tracking
+- Core and optional question tracking with skip functionality after validation retries
 
 ### Technical Architecture
 
 **Backend:**
 - Flask web framework for API endpoints
-- OpenAI GPT-4o-mini for conversational responses
-- Answer validation with retry logic and gibberish detection
-- YAML-based business plan structure
-- DOCX document generation
-- Email service with SMTP integration
-- Text-to-speech and audio transcription (OpenAI Whisper/TTS)
+- Customized OpenAI GPT-4o-mini assistant with specialized knowledge of business documents, links, and resources tailored for business advisory services
+- Answer validation with retry logic (max 1 retry) and gibberish detection, with automatic skip after failed retries
+- YAML-based business plan structure loaded from config
+- DOCX document generation from form data
+- Email service with SMTP integration (automatic email delivery when business plan is complete)
+- Text-to-speech (OpenAI TTS) and audio transcription (OpenAI Whisper)
+- Automatic email extraction from user messages
 
 **Frontend:**
 - Modern, responsive HTML/CSS/JavaScript
